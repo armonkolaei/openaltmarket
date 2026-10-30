@@ -86,12 +86,13 @@ export const useAuthStore = defineStore('auth', {
                 email: user.email,
                 photoURL: user.photoURL
               });
+              this.error = null;
             } catch (error) {
               this.profile = buildFallbackProfile(user);
-              if (error instanceof ProfileSyncUnavailableError) {
-                this.error = null;
-              } else {
-                this.error = error instanceof Error ? error.message : 'Profile sync failed.';
+              // Keep auth UX functional even if backend sync is temporarily unavailable.
+              this.error = null;
+              if (!(error instanceof ProfileSyncUnavailableError)) {
+                console.warn('Profile sync failed; using local fallback profile.', error);
               }
             }
           } else {
