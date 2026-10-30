@@ -1,0 +1,41 @@
+import { MongoClient, ServerApiVersion, type Collection } from 'mongodb';
+import { env } from '../utils/env';
+import type { UserProfile } from '../types/user';
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __openAltMongoClient: MongoClient | undefined;
+}
+
+let clientPromise: Promise<MongoClient> | null = null;
+
+function createClient() {
+  const client = new MongoClient(env.mongodbUri, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true
+    }
+  });
+
+  return client.connect();
+}
+
+export async function getMongoClient(): Promise<MongoClient> {
+  if (globalThis.__openAltMongoClient) {
+    return globalThis.__openAltMongoClient;
+  }
+
+  if (!clientPromise) {
+    clientPromise = createClient();
+  }
+
+  const client = await clientPromise;
+  globalThis.__openAltMongoClient = client;
+  return client;
+}
+
+export async function getUsersCollection(): Promise<Collection<UserProfile>> {
+  const client = await getMongoClient();
+  return client.db(env.mongodbDbName).collection<UserProfile>('users');
+}
