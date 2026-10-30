@@ -26,6 +26,16 @@ export interface AppUserProfile {
   lastLoginAt: string;
 }
 
+export type VoteValue = -1 | 0 | 1;
+
+export interface VoteResult {
+  id: string;
+  upvotes: number;
+  downvotes: number;
+  score: number;
+  myVote: VoteValue;
+}
+
 export interface PublicSubmission {
   id: string;
   name: string;
@@ -35,6 +45,10 @@ export interface PublicSubmission {
   keywords: string[];
   createdAt: string;
   approvedAt: string;
+  upvotes: number;
+  downvotes: number;
+  score: number;
+  myVote: VoteValue;
 }
 
 export interface AppSubmission {

@@ -9,6 +9,8 @@ import {
   toPublicSubmissionResponse,
   toSubmissionResponse
 } from '../../backend/submissions/submission.js';
+import { getUserVotes, getVoteTotals } from '../../backend/submissions/votes.js';
+import type { VoteValue } from '../../backend/types/submission.js';
 import { jsonError, jsonOk } from '../../backend/utils/http.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -18,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method?.toUpperCase() === 'GET') {
     const status = Array.isArray(req.query?.status) ? req.query.status[0] : req.query?.status;
-    return status === 'approved' ? handleListApproved(res) : handleListPending(req, res);
+    return status === 'approved' ? handleListApproved(req, res) : handleListPending(req, res);
   }
 
   return jsonError(res, 405, `Method ${req.method ?? 'UNKNOWN'} not allowed. Use GET or POST.`);
@@ -57,13 +59,31 @@ async function handleCreate(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-async function handleListApproved(res: VercelResponse) {
+async function handleListApproved(req: VercelRequest, res: VercelResponse) {
   try {
     const submissions = await getSubmissionsCollection();
     const docs = await submissions.find({ status: 'approved' }).sort({ updatedAt: -1 }).limit(500).toArray();
+    const ids = docs.map((doc) => doc._id.toString());
+    const totals = await getVoteTotals(ids);
 
-    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
-    return jsonOk(res, { submissions: docs.map((doc) => toPublicSubmissionResponse(doc)) });
+    // Responses that include the caller's own vote must never be shared-cached.
+    let myVotes = new Map<string, VoteValue>();
+    if (req.headers.authorization) {
+      const token = await verifyRequestToken(req).catch(() => null);
+      if (token) {
+        myVotes = await getUserVotes(token.uid, ids);
+      }
+      res.setHeader('Cache-Control', 'private, no-store');
+    } else {
+      res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+    }
+
+    return jsonOk(res, {
+      submissions: docs.map((doc) => {
+        const id = doc._id.toString();
+        return toPublicSubmissionResponse(doc, totals.get(id), myVotes.get(id) ?? 0);
+      })
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected server error.';
     return jsonError(res, 500, message);

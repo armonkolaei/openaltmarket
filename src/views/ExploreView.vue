@@ -19,7 +19,14 @@ const topic = ref<string | null>(first(route.query.topic).toLowerCase() || null)
 
 const replacedOptions = computed(() => countTags(apps.value, (item) => item.alternativesTo, 100));
 const topicOptions = computed(() => countTags(apps.value, (item) => item.keywords, 100));
-const results = computed(() => filterApps(apps.value, query.value, replaces.value, topic.value));
+const sort = ref<'top' | 'newest'>('top');
+const results = computed(() =>
+  [...filterApps(apps.value, query.value, replaces.value, topic.value)].sort((a, b) =>
+    sort.value === 'top'
+      ? b.score - a.score || b.approvedAt.localeCompare(a.approvedAt)
+      : b.approvedAt.localeCompare(a.approvedAt)
+  )
+);
 const hasFilters = computed(() => Boolean(query.value || replaces.value || topic.value));
 
 watch([query, replaces, topic], () => {
@@ -115,11 +122,20 @@ onMounted(() => {
     </section>
 
     <section class="mx-auto mt-8 max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between gap-3">
         <p class="text-sm text-slate-600" aria-live="polite">{{ results.length }} result{{ results.length === 1 ? '' : 's' }}</p>
-        <button v-if="hasFilters" type="button" class="text-sm font-semibold text-brand-700 hover:text-brand-900" @click="clearAll">
-          Clear filters
-        </button>
+        <div class="flex items-center gap-4">
+          <label class="flex items-center gap-2 text-sm text-slate-600">
+            Sort
+            <select v-model="sort" class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm">
+              <option value="top">Top voted</option>
+              <option value="newest">Newest</option>
+            </select>
+          </label>
+          <button v-if="hasFilters" type="button" class="text-sm font-semibold text-brand-700 hover:text-brand-900" @click="clearAll">
+            Clear filters
+          </button>
+        </div>
       </div>
 
       <p v-if="loadError" class="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{{ loadError }}</p>

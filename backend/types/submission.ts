@@ -40,4 +40,26 @@ export interface PublicSubmissionResponse {
   keywords: string[];
   createdAt: string;
   approvedAt: string;
+  upvotes: number;
+  downvotes: number;
+  score: number;
+  myVote: VoteValue;
+}
+
+export type VoteValue = -1 | 0 | 1;
+
+export interface SubmissionVote {
+  // Deterministic `${submissionId}:${uid}` key: the primary key itself enforces one vote per user.
+  _id: string;
+  submissionId: string;
+  uid: string;
+  value: 1 | -1;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface VoteTotals {
+  upvotes: number;
+  downvotes: number;
+  score: number;
 }

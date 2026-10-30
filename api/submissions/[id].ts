@@ -3,12 +3,18 @@ import { ObjectId } from 'mongodb';
 import { z, ZodError } from 'zod';
 import { AuthError, verifyRequestToken } from '../../backend/auth/verifyToken.js';
 import { getRequesterProfile, isAdminRole } from '../../backend/auth/authorization.js';
-import { getSubmissionsCollection } from '../../backend/db/mongo.js';
+import { getSubmissionsCollection, getVotesCollection } from '../../backend/db/mongo.js';
 import { toSubmissionResponse } from '../../backend/submissions/submission.js';
+import { EMPTY_TOTALS } from '../../backend/submissions/voteMath.js';
+import { getVoteTotals, setVote } from '../../backend/submissions/votes.js';
 import { jsonError, jsonOk } from '../../backend/utils/http.js';
 
 const reviewPayloadSchema = z.object({
   status: z.enum(['approved', 'rejected'])
+});
+
+const votePayloadSchema = z.object({
+  value: z.union([z.literal(1), z.literal(-1), z.literal(0)])
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -23,11 +29,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return handleReview(req, res, submissionId);
   }
 
+  if (req.method?.toUpperCase() === 'PUT') {
+    return handleVote(req, res, submissionId);
+  }
+
   if (req.method?.toUpperCase() === 'DELETE') {
     return handleDelete(req, res, submissionId);
   }
 
-  return jsonError(res, 405, `Method ${req.method ?? 'UNKNOWN'} not allowed. Use PATCH or DELETE.`);
+  return jsonError(res, 405, `Method ${req.method ?? 'UNKNOWN'} not allowed. Use PATCH, PUT or DELETE.`);
+}
+
+async function handleVote(req: VercelRequest, res: VercelResponse, submissionId: string) {
+  try {
+    const token = await verifyRequestToken(req);
+    const { value } = votePayloadSchema.parse(req.body ?? {});
+
+    const submissions = await getSubmissionsCollection();
+    const submission = await submissions.findOne({ _id: new ObjectId(submissionId) });
+    if (!submission || submission.status !== 'approved') {
+      return jsonError(res, 404, 'Published alternative not found.');
+    }
+
+    await setVote(submissionId, token.uid, value);
+    const totals = (await getVoteTotals([submissionId])).get(submissionId) ?? EMPTY_TOTALS;
+
+    return jsonOk(res, { id: submissionId, ...totals, myVote: value });
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return jsonError(res, error.statusCode, error.message);
+    }
+    if (error instanceof ZodError) {
+      return jsonError(res, 400, 'Vote value must be 1, -1 or 0.');
+    }
+
+    const message = error instanceof Error ? error.message : 'Unexpected server error.';
+    return jsonError(res, 500, message);
+  }
 }
 
 async function assertAdmin(req: VercelRequest) {
@@ -84,6 +122,9 @@ async function handleDelete(req: VercelRequest, res: VercelResponse, submissionI
 
     const submissions = await getSubmissionsCollection();
     const result = await submissions.deleteOne({ _id: new ObjectId(submissionId) });
+    if (result.deletedCount > 0) {
+      await (await getVotesCollection()).deleteMany({ submissionId });
+    }
 
     if (result.deletedCount === 0) {
       return jsonError(res, 404, 'Submission not found.');

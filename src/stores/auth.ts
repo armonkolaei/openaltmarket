@@ -10,6 +10,7 @@ import {
   type User
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
+import { loadCatalog } from '@/lib/catalog';
 import { ProfileSyncUnavailableError, syncUserProfile } from '@/lib/api';
 import type { AppUserProfile } from '@/types/app';
 
@@ -77,6 +78,10 @@ export const useAuthStore = defineStore('auth', {
       authInitPromise = new Promise((resolve) => {
         onAuthStateChanged(authClient, async (user) => {
           this.firebaseUser = user;
+          // Reload so the catalog reflects this user's own votes (or clears them on logout).
+          if (this.isInitialized) {
+            void loadCatalog(true);
+          }
           this.error = null;
 
           if (user) {

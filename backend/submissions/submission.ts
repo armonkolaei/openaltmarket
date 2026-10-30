@@ -1,6 +1,13 @@
 import { ObjectId } from 'mongodb';
 import { z } from 'zod';
-import type { AppSubmission, AppSubmissionResponse, PublicSubmissionResponse } from '../types/submission.js';
+import type {
+  AppSubmission,
+  AppSubmissionResponse,
+  PublicSubmissionResponse,
+  VoteTotals,
+  VoteValue
+} from '../types/submission.js';
+import { EMPTY_TOTALS } from './voteMath.js';
 
 const submissionPayloadSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -65,7 +72,11 @@ export function toSubmissionResponse(doc: AppSubmission & { _id?: ObjectId }): A
     updatedAt: doc.updatedAt.toISOString()
   };
 }
-export function toPublicSubmissionResponse(doc: AppSubmission & { _id?: ObjectId }): PublicSubmissionResponse {
+export function toPublicSubmissionResponse(
+  doc: AppSubmission & { _id?: ObjectId },
+  totals: VoteTotals = EMPTY_TOTALS,
+  myVote: VoteValue = 0
+): PublicSubmissionResponse {
   return {
     id: doc._id?.toString() ?? doc.id ?? '',
     name: doc.name,
@@ -74,6 +85,10 @@ export function toPublicSubmissionResponse(doc: AppSubmission & { _id?: ObjectId
     alternativesTo: doc.alternativesTo,
     keywords: doc.keywords,
     createdAt: doc.createdAt.toISOString(),
-    approvedAt: (doc.reviewedAt ?? doc.updatedAt).toISOString()
+    approvedAt: (doc.reviewedAt ?? doc.updatedAt).toISOString(),
+    upvotes: totals.upvotes,
+    downvotes: totals.downvotes,
+    score: totals.score,
+    myVote
   };
 }

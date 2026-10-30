@@ -1,5 +1,5 @@
 import { auth } from './firebase';
-import type { AppSubmission, AppUserProfile, PublicSubmission, UserRole } from '@/types/app';
+import type { AppSubmission, AppUserProfile, PublicSubmission, UserRole, VoteResult, VoteValue } from '@/types/app';
 
 interface ApiErrorBody {
   error?: string;
@@ -107,7 +107,7 @@ export async function createSubmission(payload: {
 export async function fetchApprovedSubmissions(): Promise<PublicSubmission[]> {
   const response = await fetch('/api/submissions?status=approved', {
     method: 'GET',
-    headers: defaultHeaders
+    headers: { ...defaultHeaders, ...(await getAuthHeader()) }
   });
 
   if (!response.ok) {
@@ -116,6 +116,23 @@ export async function fetchApprovedSubmissions(): Promise<PublicSubmission[]> {
 
   const data = (await response.json()) as { submissions: PublicSubmission[] };
   return data.submissions;
+}
+
+export async function voteOnSubmission(id: string, value: VoteValue): Promise<VoteResult> {
+  const response = await fetch(`/api/submissions/${id}`, {
+    method: 'PUT',
+    headers: {
+      ...defaultHeaders,
+      ...(await getAuthHeader())
+    },
+    body: JSON.stringify({ value })
+  });
+
+  if (!response.ok) {
+    throw await parseError(response, 'Unable to record your vote.');
+  }
+
+  return (await response.json()) as VoteResult;
 }
 
 export async function fetchPendingSubmissions(): Promise<AppSubmission[]> {

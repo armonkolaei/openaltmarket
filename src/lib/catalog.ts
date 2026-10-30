@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue';
 import { fetchApprovedSubmissions } from '@/lib/api';
-import type { PublicSubmission } from '@/types/app';
+import type { PublicSubmission, VoteResult } from '@/types/app';
 
 export interface TagCount {
   label: string;
@@ -11,6 +11,14 @@ const apps = ref<PublicSubmission[]>([]);
 const isLoading = ref(false);
 const loadError = ref<string | null>(null);
 const hasLoaded = ref(false);
+
+export function applyVoteResult(result: VoteResult) {
+  apps.value = apps.value.map((item) =>
+    item.id === result.id
+      ? { ...item, upvotes: result.upvotes, downvotes: result.downvotes, score: result.score, myVote: result.myVote }
+      : item
+  );
+}
 
 export async function loadCatalog(force = false) {
   if (isLoading.value || (hasLoaded.value && !force)) {
