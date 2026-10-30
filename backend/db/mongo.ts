@@ -1,6 +1,7 @@
-import { MongoClient, ServerApiVersion, type Collection } from 'mongodb';
+import { MongoClient, type Collection } from 'mongodb';
 import { env } from '../utils/env';
 import type { UserProfile } from '../types/user';
+import type { AppSubmission } from '../types/submission';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -10,13 +11,7 @@ declare global {
 let clientPromise: Promise<MongoClient> | null = null;
 
 function createClient() {
-  const client = new MongoClient(env.mongodbUri, {
-    serverApi: {
-      version: ServerApiVersion.v1,
-      strict: true,
-      deprecationErrors: true
-    }
-  });
+  const client = new MongoClient(env.mongodbUri);
 
   return client.connect();
 }
@@ -38,4 +33,9 @@ export async function getMongoClient(): Promise<MongoClient> {
 export async function getUsersCollection(): Promise<Collection<UserProfile>> {
   const client = await getMongoClient();
   return client.db(env.mongodbDbName).collection<UserProfile>('users');
+}
+
+export async function getSubmissionsCollection(): Promise<Collection<AppSubmission>> {
+  const client = await getMongoClient();
+  return client.db(env.mongodbDbName).collection<AppSubmission>('submissions');
 }

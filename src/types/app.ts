@@ -1,3 +1,5 @@
+export type UserRole = 'user' | 'admin' | 'super_admin';
+
 export interface FeaturedAlternative {
   id: string;
   name: string;
@@ -19,7 +21,23 @@ export interface AppUserProfile {
   displayName: string;
   email: string;
   photoURL: string | null;
-  role: 'user' | 'admin';
+  role: UserRole;
   createdAt: string;
   lastLoginAt: string;
+}
+
+export interface AppSubmission {
+  id: string;
+  name: string;
+  description: string;
+  websiteUrl: string;
+  alternativesTo: string[];
+  keywords: string[];
+  submittedByUid: string;
+  submittedByEmail: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewedByUid: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
