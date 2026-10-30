@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth';
 import {
   createSubmission,
   deleteSubmission,
+  fetchMySubmissions,
   fetchPendingSubmissions,
   fetchUsers,
   reviewSubmission,
@@ -35,6 +36,10 @@ const isLoadingPending = ref(false);
 const pendingActionError = ref<string | null>(null);
 const pendingActionSuccess = ref<string | null>(null);
 const pendingActionBusyId = ref<string | null>(null);
+
+const mySubmissions = ref<AppSubmission[]>([]);
+const mySubmissionsError = ref<string | null>(null);
+const isLoadingMySubmissions = ref(false);
 
 const users = ref<AppUserProfile[]>([]);
 const usersLoadError = ref<string | null>(null);
@@ -71,6 +76,8 @@ async function submitSuggestion() {
     submissionForm.keywords = '';
     submissionSuccess.value = 'Submission received and queued for admin review.';
 
+    await loadMySubmissions();
+
     if (isAdmin.value) {
       await loadPendingSubmissions();
     }
@@ -97,6 +104,18 @@ async function loadPendingSubmissions() {
   }
 }
 
+async function loadMySubmissions() {
+  isLoadingMySubmissions.value = true;
+  mySubmissionsError.value = null;
+  try {
+    mySubmissions.value = await fetchMySubmissions();
+  } catch (error) {
+    mySubmissionsError.value = error instanceof Error ? error.message : 'Unable to load your submissions.';
+  } finally {
+    isLoadingMySubmissions.value = false;
+  }
+}
+
 async function moderateSubmission(id: string, status: 'approved' | 'rejected') {
   pendingActionBusyId.value = id;
   pendingActionError.value = null;
@@ -106,6 +125,7 @@ async function moderateSubmission(id: string, status: 'approved' | 'rejected') {
     const updated = await reviewSubmission(id, status);
     pendingSubmissions.value = pendingSubmissions.value.filter((item) => item.id !== id);
     pendingActionSuccess.value = `${updated.name} marked as ${status}.`;
+    await loadMySubmissions();
   } catch (error) {
     pendingActionError.value = error instanceof Error ? error.message : 'Unable to update submission.';
   } finally {
@@ -122,6 +142,7 @@ async function removeSubmission(id: string) {
     await deleteSubmission(id);
     pendingSubmissions.value = pendingSubmissions.value.filter((item) => item.id !== id);
     pendingActionSuccess.value = 'Submission deleted.';
+    await loadMySubmissions();
   } catch (error) {
     pendingActionError.value = error instanceof Error ? error.message : 'Unable to delete submission.';
   } finally {
@@ -169,6 +190,7 @@ async function saveRole(uid: string) {
 
 onMounted(async () => {
   await authStore.init();
+  await loadMySubmissions();
   await loadPendingSubmissions();
   await loadUsers();
 });
@@ -286,6 +308,37 @@ onMounted(async () => {
               {{ isSubmitting ? 'Submitting...' : 'Submit Suggestion' }}
             </button>
           </form>
+        </article>
+      </section>
+
+      <section v-if="authStore.profile" class="mt-8">
+        <article class="card-surface p-5">
+          <h2 class="font-display text-xl font-semibold text-slate-900">My Submissions</h2>
+          <p class="mt-2 text-sm text-slate-600">Track your suggestions and their review status.</p>
+
+          <p v-if="mySubmissionsError" class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ mySubmissionsError }}</p>
+          <p v-else-if="isLoadingMySubmissions" class="mt-3 text-sm text-slate-600">Loading your submissions...</p>
+          <p v-else-if="mySubmissions.length === 0" class="mt-3 text-sm text-slate-600">You have not submitted any alternatives yet.</p>
+
+          <div v-else class="mt-4 space-y-3">
+            <article v-for="submission in mySubmissions" :key="`mine-${submission.id}`" class="rounded-xl border border-slate-200 p-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h3 class="font-semibold text-slate-900">{{ submission.name }}</h3>
+                <span
+                  class="rounded-full px-2.5 py-1 text-xs font-semibold"
+                  :class="{
+                    'bg-amber-100 text-amber-800': submission.status === 'pending',
+                    'bg-emerald-100 text-emerald-800': submission.status === 'approved',
+                    'bg-rose-100 text-rose-800': submission.status === 'rejected'
+                  }"
+                >
+                  {{ submission.status }}
+                </span>
+              </div>
+              <p class="mt-1 text-sm text-slate-600">{{ submission.description }}</p>
+              <p class="mt-2 text-xs text-slate-500">Submitted {{ new Date(submission.createdAt).toLocaleString() }}</p>
+            </article>
+          </div>
         </article>
       </section>
 

@@ -121,6 +121,23 @@ export async function fetchPendingSubmissions(): Promise<AppSubmission[]> {
   return data.submissions;
 }
 
+export async function fetchMySubmissions(): Promise<AppSubmission[]> {
+  const response = await fetch('/api/submissions/mine', {
+    method: 'GET',
+    headers: {
+      ...defaultHeaders,
+      ...(await getAuthHeader())
+    }
+  });
+
+  if (!response.ok) {
+    throw await parseError(response, 'Unable to load your submissions.');
+  }
+
+  const data = (await response.json()) as { submissions: AppSubmission[] };
+  return data.submissions;
+}
+
 export async function fetchUsers(): Promise<AppUserProfile[]> {
   const response = await fetch('/api/admin/users', {
     method: 'GET',

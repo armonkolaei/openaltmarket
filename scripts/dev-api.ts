@@ -22,10 +22,11 @@ function callHandler(
 }
 
 async function start() {
-  const [{ default: healthHandler }, { default: syncUserHandler }, { default: submissionsHandler }, { default: submissionByIdHandler }, { default: adminUsersHandler }, { default: adminRolesHandler }] = await Promise.all([
+  const [{ default: healthHandler }, { default: syncUserHandler }, { default: submissionsHandler }, { default: mySubmissionsHandler }, { default: submissionByIdHandler }, { default: adminUsersHandler }, { default: adminRolesHandler }] = await Promise.all([
     import('../api/health'),
     import('../api/users/sync'),
     import('../api/submissions/index'),
+    import('../api/submissions/mine'),
     import('../api/submissions/[id]'),
     import('../api/admin/users'),
     import('../api/admin/roles')
@@ -34,12 +35,17 @@ async function start() {
   app.all('/api/health', (req, res) => callHandler(healthHandler, req, res));
   app.all('/api/users/sync', (req, res) => callHandler(syncUserHandler, req, res));
   app.all('/api/submissions', (req, res) => callHandler(submissionsHandler, req, res));
+  app.all('/api/submissions/mine', (req, res) => callHandler(mySubmissionsHandler, req, res));
   app.all('/api/submissions/:id', (req, res) => {
-    req.query = {
-      ...req.query,
-      id: req.params.id
-    };
-    return callHandler(submissionByIdHandler, req, res);
+    const reqWithIdQuery = Object.create(req) as express.Request;
+    Object.defineProperty(reqWithIdQuery, 'query', {
+      value: {
+        ...(req.query as Record<string, unknown>),
+        id: req.params.id
+      },
+      configurable: true
+    });
+    return callHandler(submissionByIdHandler, reqWithIdQuery, res);
   });
   app.all('/api/admin/users', (req, res) => callHandler(adminUsersHandler, req, res));
   app.all('/api/admin/roles', (req, res) => callHandler(adminRolesHandler, req, res));

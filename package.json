@@ -10,12 +10,16 @@
   "scripts": {
     "dev": "concurrently -k -n frontend,api \"npm:dev:frontend\" \"npm:dev:api\"",
     "dev:frontend": "vite",
-    "dev:api": "tsx scripts/dev-api.ts",
+    "dev:frontend:fixed": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "dev:api": "tsx watch scripts/dev-api.ts",
+    "dev:e2e": "concurrently -k -n frontend,api \"npm:dev:frontend:fixed\" \"npm:dev:api\"",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
     "dev:vercel": "npx vercel dev"
   },
   "repository": {
@@ -50,6 +54,7 @@
     "@firebase/app": "0.16.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/express": "^5.0.6",
     "@types/node": "^24.10.1",
     "@types/supertest": "^6.0.3",

@@ -5,6 +5,7 @@ import { getUsersCollection } from '../../backend/db/mongo';
 import { parseProfilePatch, buildUserProfile, toUserProfileResponse } from '../../backend/users/profile';
 import { jsonError, jsonOk, requireMethod } from '../../backend/utils/http';
 import type { UserProfile } from '../../backend/types/user';
+import { env } from '../../backend/utils/env';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const invalidMethod = requireMethod(req.method, 'POST');
@@ -19,16 +20,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const users = await getUsersCollection();
     const now = new Date();
+    const existing = await users.findOne({ uid: profileBase.uid });
+    const isConfiguredSuperAdmin = env.superAdminEmails.includes(profileBase.email.toLowerCase());
+
+    const nextRole = existing?.role
+      ? isConfiguredSuperAdmin
+        ? 'super_admin'
+        : existing.role
+      : isConfiguredSuperAdmin
+        ? 'super_admin'
+        : 'user';
 
     await users.updateOne(
       { uid: profileBase.uid },
       {
         $set: {
           ...profileBase,
+          role: nextRole,
           lastLoginAt: now
         },
         $setOnInsert: {
-          role: 'user',
           createdAt: now
         }
       },
