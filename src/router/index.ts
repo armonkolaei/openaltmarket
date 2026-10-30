@@ -56,18 +56,17 @@ const router = createRouter({
           name: 'dashboard-submissions',
           component: () => import('@/views/dashboard/MySubmissionsTab.vue')
         },
-        {
-          path: 'review',
-          name: 'dashboard-review',
-          component: () => import('@/views/dashboard/ReviewTab.vue'),
-          meta: { requiresAdmin: true }
-        },
-        {
-          path: 'users',
-          name: 'dashboard-users',
-          component: () => import('@/views/dashboard/UsersTab.vue'),
-          meta: { requiresAdmin: true }
-        }
+      ]
+    },
+    {
+      path: '/admin',
+      component: () => import('@/views/AdminView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+      children: [
+        { path: '', name: 'admin', redirect: { name: 'admin-review' } },
+        { path: 'review', name: 'admin-review', component: () => import('@/views/admin/ReviewQueueTab.vue') },
+        { path: 'submissions', name: 'admin-submissions', component: () => import('@/views/admin/AllSubmissionsTab.vue') },
+        { path: 'users', name: 'admin-users', component: () => import('@/views/admin/UsersTab.vue') }
       ]
     },
     {

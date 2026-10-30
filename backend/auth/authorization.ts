@@ -10,7 +10,19 @@ export async function getRequesterProfile(token: DecodedIdToken): Promise<UserPr
     throw new AuthError('Requester profile not found. Please log in again.', 403);
   }
 
+  if (profile.disabled) {
+    throw new AuthError('This account has been disabled.', 403);
+  }
+
   return profile;
+}
+
+export async function assertActiveUser(token: DecodedIdToken): Promise<void> {
+  const users = await getUsersCollection();
+  const profile = await users.findOne({ uid: token.uid });
+  if (profile?.disabled) {
+    throw new AuthError('This account has been disabled.', 403);
+  }
 }
 
 export function requireRole(profile: UserProfile, allowedRoles: UserRole[]) {

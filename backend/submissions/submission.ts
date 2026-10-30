@@ -21,6 +21,10 @@ const submissionPayloadSchema = z.object({
   keywords: z.array(z.string().trim().min(1).max(40)).min(1).max(30)
 });
 
+export const submissionEditSchema = submissionPayloadSchema.partial();
+
+export type SubmissionEdit = z.infer<typeof submissionEditSchema>;
+
 export interface SubmissionPayload {
   name: string;
   description: string;

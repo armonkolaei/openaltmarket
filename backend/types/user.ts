@@ -6,6 +6,7 @@ export interface UserProfile {
   email: string;
   photoURL: string | null;
   role: UserRole;
+  disabled?: boolean;
   createdAt: Date;
   lastLoginAt: Date;
 }
@@ -16,6 +17,7 @@ export interface UserProfileResponse {
   email: string;
   photoURL: string | null;
   role: UserRole;
+  disabled: boolean;
   createdAt: string;
   lastLoginAt: string;
 }

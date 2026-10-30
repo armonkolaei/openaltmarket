@@ -41,6 +41,7 @@ export function toUserProfileResponse(user: UserProfile): UserProfileResponse {
     email: user.email,
     photoURL: user.photoURL,
     role: user.role,
+    disabled: user.disabled === true,
     createdAt: user.createdAt.toISOString(),
     lastLoginAt: user.lastLoginAt.toISOString()
   };

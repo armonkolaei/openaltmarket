@@ -10,13 +10,7 @@ const isAdmin = computed(() => authStore.profile?.role === 'admin' || authStore.
 const tabs = computed(() => [
   { label: 'Overview', to: { name: 'dashboard' }, exact: true },
   { label: 'Submit an app', to: { name: 'dashboard-submit' }, exact: false },
-  { label: 'My submissions', to: { name: 'dashboard-submissions' }, exact: false },
-  ...(isAdmin.value
-    ? [
-        { label: 'Review queue', to: { name: 'dashboard-review' }, exact: false },
-        { label: 'Users', to: { name: 'dashboard-users' }, exact: false }
-      ]
-    : [])
+  { label: 'My submissions', to: { name: 'dashboard-submissions' }, exact: false }
 ]);
 </script>
 
@@ -24,11 +18,20 @@ const tabs = computed(() => [
   <div class="min-h-screen bg-slate-50">
     <SiteHeader />
     <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <header class="mb-6">
-        <h1 class="font-display text-3xl font-semibold text-slate-900">Dashboard</h1>
-        <p class="mt-1 text-sm text-slate-600">
-          Welcome back, {{ authStore.profile?.displayName || authStore.firebaseUser?.email || 'Builder' }}.
-        </p>
+      <header class="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 class="font-display text-3xl font-semibold text-slate-900">Dashboard</h1>
+          <p class="mt-1 text-sm text-slate-600">
+            Welcome back, {{ authStore.profile?.displayName || authStore.firebaseUser?.email || 'Builder' }}.
+          </p>
+        </div>
+        <router-link
+          v-if="isAdmin"
+          :to="{ name: 'admin' }"
+          class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
+        >
+          Admin console
+        </router-link>
       </header>
 
       <section v-if="authStore.error" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -51,9 +54,7 @@ const tabs = computed(() => [
           >
             {{ tab.label }}
           </router-link>
-          <span v-if="isAdmin" class="mt-1 hidden px-3 text-xs uppercase tracking-wide text-slate-400 lg:block">
-            {{ authStore.profile.role.replace('_', ' ') }}
-          </span>
+
         </nav>
 
         <div class="min-w-0">

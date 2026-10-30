@@ -2,16 +2,16 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { ObjectId } from 'mongodb';
 import { z, ZodError } from 'zod';
 import { AuthError, verifyRequestToken } from '../../backend/auth/verifyToken.js';
-import { getRequesterProfile, isAdminRole } from '../../backend/auth/authorization.js';
+import { assertActiveUser, getRequesterProfile, isAdminRole } from '../../backend/auth/authorization.js';
 import { getSubmissionsCollection, getVotesCollection } from '../../backend/db/mongo.js';
-import { toSubmissionResponse } from '../../backend/submissions/submission.js';
+import { submissionEditSchema, toSubmissionResponse } from '../../backend/submissions/submission.js';
 import { EMPTY_TOTALS } from '../../backend/submissions/voteMath.js';
 import { getVoteTotals, setVote } from '../../backend/submissions/votes.js';
 import { jsonError, jsonOk } from '../../backend/utils/http.js';
 
-const reviewPayloadSchema = z.object({
-  status: z.enum(['approved', 'rejected'])
-});
+const reviewPayloadSchema = submissionEditSchema
+  .extend({ status: z.enum(['pending', 'approved', 'rejected']).optional() })
+  .refine((value) => Object.keys(value).length > 0, 'Provide a status or at least one field to update.');
 
 const votePayloadSchema = z.object({
   value: z.union([z.literal(1), z.literal(-1), z.literal(0)])
@@ -43,6 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 async function handleVote(req: VercelRequest, res: VercelResponse, submissionId: string) {
   try {
     const token = await verifyRequestToken(req);
+    await assertActiveUser(token);
     const { value } = votePayloadSchema.parse(req.body ?? {});
 
     const submissions = await getSubmissionsCollection();
@@ -84,14 +85,18 @@ async function handleReview(req: VercelRequest, res: VercelResponse, submissionI
 
     const submissions = await getSubmissionsCollection();
     const now = new Date();
+    const { status, ...edits } = payload;
 
     const result = await submissions.findOneAndUpdate(
       { _id: new ObjectId(submissionId) },
       {
         $set: {
-          status: payload.status,
-          reviewedByUid: admin.uid,
-          reviewedAt: now,
+          ...edits,
+          ...(status
+            ? status === 'pending'
+              ? { status, reviewedByUid: null, reviewedAt: null }
+              : { status, reviewedByUid: admin.uid, reviewedAt: now }
+            : {}),
           updatedAt: now
         }
       },

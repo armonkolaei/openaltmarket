@@ -135,8 +135,14 @@ export async function voteOnSubmission(id: string, value: VoteValue): Promise<Vo
   return (await response.json()) as VoteResult;
 }
 
-export async function fetchPendingSubmissions(): Promise<AppSubmission[]> {
-  const response = await fetch('/api/submissions', {
+export type AdminStatusFilter = AppSubmission['status'] | 'all';
+
+export async function fetchPendingSubmissions(status: AdminStatusFilter = 'pending', search = ''): Promise<AppSubmission[]> {
+  const params = new URLSearchParams({ status });
+  if (search.trim()) {
+    params.set('q', search.trim());
+  }
+  const response = await fetch(`/api/submissions?${params.toString()}`, {
     method: 'GET',
     headers: {
       ...defaultHeaders,
@@ -198,6 +204,53 @@ export async function updateUserRole(uid: string, role: UserRole): Promise<AppUs
 
   if (!response.ok) {
     throw await parseError(response, 'Unable to update user role.');
+  }
+
+  const data = (await response.json()) as { user: AppUserProfile };
+  return data.user;
+}
+
+export interface SubmissionEdits {
+  name?: string;
+  description?: string;
+  websiteUrl?: string;
+  alternativesTo?: string[];
+  keywords?: string[];
+}
+
+export async function updateSubmission(
+  id: string,
+  changes: SubmissionEdits & { status?: AppSubmission['status'] }
+): Promise<AppSubmission> {
+  const response = await fetch(`/api/submissions/${id}`, {
+    method: 'PATCH',
+    headers: {
+      ...defaultHeaders,
+      ...(await getAuthHeader())
+    },
+    body: JSON.stringify(changes)
+  });
+
+  if (!response.ok) {
+    throw await parseError(response, 'Unable to update submission.');
+  }
+
+  const data = (await response.json()) as { submission: AppSubmission };
+  return data.submission;
+}
+
+export async function setUserDisabled(uid: string, disabled: boolean): Promise<AppUserProfile> {
+  const response = await fetch('/api/admin/roles', {
+    method: 'PATCH',
+    headers: {
+      ...defaultHeaders,
+      ...(await getAuthHeader())
+    },
+    body: JSON.stringify({ uid, disabled })
+  });
+
+  if (!response.ok) {
+    throw await parseError(response, 'Unable to update user access.');
   }
 
   const data = (await response.json()) as { user: AppUserProfile };

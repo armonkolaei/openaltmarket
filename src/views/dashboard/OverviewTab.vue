@@ -1,16 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { useAuthStore } from '@/stores/auth';
-import { fetchMySubmissions, fetchPendingSubmissions } from '@/lib/api';
+import { fetchMySubmissions } from '@/lib/api';
 import { loadCatalog, useCatalog } from '@/lib/catalog';
 import type { AppSubmission } from '@/types/app';
 
-const authStore = useAuthStore();
 const { apps, topReplaced, topKeywords, latest } = useCatalog();
 
-const isAdmin = computed(() => authStore.profile?.role === 'admin' || authStore.profile?.role === 'super_admin');
 const mine = ref<AppSubmission[]>([]);
-const pendingCount = ref<number | null>(null);
 
 const myCounts = computed(() => ({
   pending: mine.value.filter((item) => item.status === 'pending').length,
@@ -22,11 +18,6 @@ const maxReplaced = computed(() => Math.max(1, ...topReplaced.value.map((tag) =>
 onMounted(async () => {
   void loadCatalog();
   mine.value = await fetchMySubmissions().catch(() => []);
-  if (isAdmin.value) {
-    pendingCount.value = await fetchPendingSubmissions()
-      .then((items) => items.length)
-      .catch(() => null);
-  }
 });
 </script>
 
@@ -42,14 +33,6 @@ onMounted(async () => {
         <p class="text-sm text-slate-600">
           Your submissions · {{ myCounts.approved }} approved · {{ myCounts.pending }} pending
         </p>
-      </router-link>
-      <router-link
-        v-if="isAdmin"
-        :to="{ name: 'dashboard-review' }"
-        class="card-surface border-amber-200 p-5 transition hover:border-amber-400"
-      >
-        <p class="font-display text-2xl font-semibold text-slate-900">{{ pendingCount ?? '–' }}</p>
-        <p class="text-sm text-slate-600">Awaiting your review</p>
       </router-link>
       <div class="card-surface p-5">
         <p class="font-display text-2xl font-semibold text-slate-900">{{ apps.length }}</p>

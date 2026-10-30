@@ -22,6 +22,7 @@ export interface AppUserProfile {
   email: string;
   photoURL: string | null;
   role: UserRole;
+  disabled?: boolean;
   createdAt: string;
   lastLoginAt: string;
 }

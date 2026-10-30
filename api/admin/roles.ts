@@ -7,10 +7,13 @@ import { jsonError, jsonOk, requireMethod } from '../../backend/utils/http.js';
 import { toUserProfileResponse } from '../../backend/users/profile.js';
 import type { UserRole } from '../../backend/types/user.js';
 
-const roleUpdateSchema = z.object({
-  uid: z.string().trim().min(1),
-  role: z.enum(['user', 'admin', 'super_admin'])
-});
+const roleUpdateSchema = z
+  .object({
+    uid: z.string().trim().min(1),
+    role: z.enum(['user', 'admin', 'super_admin']).optional(),
+    disabled: z.boolean().optional()
+  })
+  .refine((value) => value.role !== undefined || value.disabled !== undefined, 'Provide a role or disabled flag.');
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const invalidMethod = requireMethod(req.method, 'PATCH');
@@ -24,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     requireRole(requester, ['super_admin']);
 
     const payload = roleUpdateSchema.parse(req.body ?? {});
-    const nextRole = payload.role as UserRole;
+    const nextRole = (payload.role ?? undefined) as UserRole | undefined;
 
     const users = await getUsersCollection();
     const existing = await users.findOne({ uid: payload.uid });
@@ -32,11 +35,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return jsonError(res, 404, 'User not found.');
     }
 
-    if (requester.uid === payload.uid && nextRole !== 'super_admin') {
+    if (requester.uid === payload.uid && nextRole && nextRole !== 'super_admin') {
       return jsonError(res, 400, 'Super admin cannot remove their own super_admin role.');
     }
+    if (requester.uid === payload.uid && payload.disabled) {
+      return jsonError(res, 400, 'You cannot disable your own account.');
+    }
 
-    await users.updateOne({ uid: payload.uid }, { $set: { role: nextRole } });
+    await users.updateOne(
+      { uid: payload.uid },
+      {
+        $set: {
+          ...(nextRole ? { role: nextRole } : {}),
+          ...(payload.disabled !== undefined ? { disabled: payload.disabled } : {})
+        }
+      }
+    );
     const updated = await users.findOne({ uid: payload.uid });
     if (!updated) {
       return jsonError(res, 500, 'Unable to load updated user profile.');

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { fetchUsers, updateUserRole } from '@/lib/api';
+import { fetchUsers, setUserDisabled, updateUserRole } from '@/lib/api';
 import type { AppUserProfile, UserRole } from '@/types/app';
 
 const authStore = useAuthStore();
@@ -46,16 +46,36 @@ async function saveRole(uid: string) {
   }
 }
 
+async function toggleAccess(user: AppUserProfile) {
+  const disable = !user.disabled;
+  if (disable && !window.confirm(`Remove access for ${user.email}? They will no longer be able to sign in or contribute.`)) {
+    return;
+  }
+
+  busyUid.value = user.uid;
+  updateError.value = null;
+  updateSuccess.value = null;
+  try {
+    const updated = await setUserDisabled(user.uid, disable);
+    users.value = users.value.map((entry) => (entry.uid === user.uid ? updated : entry));
+    updateSuccess.value = disable ? `Access removed for ${updated.email}.` : `Access restored for ${updated.email}.`;
+  } catch (err) {
+    updateError.value = err instanceof Error ? err.message : 'Unable to update user access.';
+  } finally {
+    busyUid.value = null;
+  }
+}
+
 onMounted(load);
 </script>
 
 <template>
   <article class="card-surface p-5">
-    <h2 class="font-display text-xl font-semibold text-slate-900">User Role Management</h2>
+    <h2 class="font-display text-xl font-semibold text-slate-900">Users & access</h2>
     <p class="mt-2 text-sm text-slate-600">Manage platform roles for registered users.</p>
 
     <p v-if="!isSuperAdmin" class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-      You can view users, but only super admins can change roles.
+      You can view users, but only super admins can change roles or remove access.
     </p>
     <p v-if="loadError" class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ loadError }}</p>
     <p v-else-if="isLoading" class="mt-3 text-sm text-slate-600">Loading users...</p>
@@ -70,6 +90,7 @@ onMounted(load);
             <th class="px-2 py-2 font-medium">Email</th>
             <th class="px-2 py-2 font-medium">Display Name</th>
             <th class="px-2 py-2 font-medium">Role</th>
+            <th class="px-2 py-2 font-medium">Access</th>
             <th class="px-2 py-2 font-medium">Action</th>
           </tr>
         </thead>
@@ -85,6 +106,14 @@ onMounted(load);
               </select>
             </td>
             <td class="px-2 py-2">
+              <span
+                class="rounded-full px-2 py-0.5 text-xs font-semibold"
+                :class="user.disabled ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'"
+              >
+                {{ user.disabled ? 'Disabled' : 'Active' }}
+              </span>
+            </td>
+            <td class="px-2 py-2">
               <button
                 type="button"
                 class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
@@ -92,6 +121,15 @@ onMounted(load);
                 @click="saveRole(user.uid)"
               >
                 {{ busyUid === user.uid ? 'Saving...' : 'Save Role' }}
+              </button>
+              <button
+                type="button"
+                class="ml-2 rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                :class="user.disabled ? 'border-emerald-400 text-emerald-700' : 'border-rose-300 text-rose-700'"
+                :disabled="!isSuperAdmin || busyUid === user.uid || user.uid === authStore.profile?.uid"
+                @click="toggleAccess(user)"
+              >
+                {{ user.disabled ? 'Restore access' : 'Remove access' }}
               </button>
             </td>
           </tr>

@@ -92,6 +92,11 @@ export const useAuthStore = defineStore('auth', {
                 photoURL: user.photoURL
               });
               this.error = null;
+              if (this.profile.disabled) {
+                await signOut(authClient);
+                this.profile = null;
+                this.error = 'This account has been disabled. Contact an administrator.';
+              }
             } catch (error) {
               this.profile = buildFallbackProfile(user);
               // Keep auth UX functional even if backend sync is temporarily unavailable.
