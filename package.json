@@ -8,8 +8,9 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "npx vercel dev",
+    "dev": "concurrently -k -n frontend,api \"npm:dev:frontend\" \"npm:dev:api\"",
     "dev:frontend": "vite",
+    "dev:api": "tsx scripts/dev-api.ts",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
@@ -35,6 +36,8 @@
   },
   "homepage": "https://github.com/armonkolaei/openaltmarket#readme",
   "dependencies": {
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
     "firebase": "^12.4.0",
     "firebase-admin": "^13.5.0",
     "mongodb": "^6.20.0",
@@ -47,6 +50,7 @@
     "@firebase/app": "0.16.4"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^24.10.1",
     "@types/supertest": "^6.0.3",
     "@vercel/node": "^5.3.24",
