@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { DecodedIdToken } from 'firebase-admin/auth';
-import type { UserProfile, UserProfileResponse } from '../types/user';
+import type { UserProfile, UserProfileResponse } from '../types/user.js';
 
 const profilePayloadSchema = z.object({
   displayName: z.string().trim().min(1).max(120).optional(),

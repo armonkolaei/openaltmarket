@@ -25,7 +25,7 @@ export function extractBearerToken(authorizationHeader?: string): string {
 
 export async function verifyRequestToken(req: VercelRequest) {
   const token = extractBearerToken(req.headers.authorization);
-  const { getFirebaseAdminAuth } = await import('./firebaseAdmin');
+  const { getFirebaseAdminAuth } = await import('./firebaseAdmin.js');
   const auth = getFirebaseAdminAuth();
   return auth.verifyIdToken(token);
 }

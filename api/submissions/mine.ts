@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { AuthError, verifyRequestToken } from '../../backend/auth/verifyToken';
-import { getSubmissionsCollection } from '../../backend/db/mongo';
-import { toSubmissionResponse } from '../../backend/submissions/submission';
-import { jsonError, jsonOk, requireMethod } from '../../backend/utils/http';
+import { AuthError, verifyRequestToken } from '../../backend/auth/verifyToken.js';
+import { getSubmissionsCollection } from '../../backend/db/mongo.js';
+import { toSubmissionResponse } from '../../backend/submissions/submission.js';
+import { jsonError, jsonOk, requireMethod } from '../../backend/utils/http.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const invalidMethod = requireMethod(req.method, 'GET');

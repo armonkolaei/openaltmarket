@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z, ZodError } from 'zod';
-import { verifyRequestToken, AuthError } from '../../backend/auth/verifyToken';
-import { getRequesterProfile, requireRole } from '../../backend/auth/authorization';
-import { getUsersCollection } from '../../backend/db/mongo';
-import { jsonError, jsonOk, requireMethod } from '../../backend/utils/http';
-import { toUserProfileResponse } from '../../backend/users/profile';
-import type { UserRole } from '../../backend/types/user';
+import { verifyRequestToken, AuthError } from '../../backend/auth/verifyToken.js';
+import { getRequesterProfile, requireRole } from '../../backend/auth/authorization.js';
+import { getUsersCollection } from '../../backend/db/mongo.js';
+import { jsonError, jsonOk, requireMethod } from '../../backend/utils/http.js';
+import { toUserProfileResponse } from '../../backend/users/profile.js';
+import type { UserRole } from '../../backend/types/user.js';
 
 const roleUpdateSchema = z.object({
   uid: z.string().trim().min(1),

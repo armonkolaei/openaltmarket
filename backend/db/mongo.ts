@@ -1,7 +1,7 @@
 import { MongoClient, type Collection } from 'mongodb';
-import { env } from '../utils/env';
-import type { UserProfile } from '../types/user';
-import type { AppSubmission } from '../types/submission';
+import { env } from '../utils/env.js';
+import type { UserProfile } from '../types/user.js';
+import type { AppSubmission } from '../types/submission.js';
 
 declare global {
   // eslint-disable-next-line no-var

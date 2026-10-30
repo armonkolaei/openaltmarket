@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { ZodError } from 'zod';
-import { verifyRequestToken, AuthError } from '../../backend/auth/verifyToken';
-import { getUsersCollection } from '../../backend/db/mongo';
-import { parseProfilePatch, buildUserProfile, toUserProfileResponse } from '../../backend/users/profile';
-import { jsonError, jsonOk, requireMethod } from '../../backend/utils/http';
-import type { UserProfile } from '../../backend/types/user';
-import { env } from '../../backend/utils/env';
+import { verifyRequestToken, AuthError } from '../../backend/auth/verifyToken.js';
+import { getUsersCollection } from '../../backend/db/mongo.js';
+import { parseProfilePatch, buildUserProfile, toUserProfileResponse } from '../../backend/users/profile.js';
+import { jsonError, jsonOk, requireMethod } from '../../backend/utils/http.js';
+import type { UserProfile } from '../../backend/types/user.js';
+import { env } from '../../backend/utils/env.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const invalidMethod = requireMethod(req.method, 'POST');

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { jsonOk, requireMethod, jsonError } from '../backend/utils/http';
+import { jsonOk, requireMethod, jsonError } from '../backend/utils/http.js';
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   const invalidMethod = requireMethod(req.method, 'GET');

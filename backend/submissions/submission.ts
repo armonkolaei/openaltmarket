@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { z } from 'zod';
-import type { AppSubmission, AppSubmissionResponse } from '../types/submission';
+import type { AppSubmission, AppSubmissionResponse } from '../types/submission.js';
 
 const submissionPayloadSchema = z.object({
   name: z.string().trim().min(2).max(120),

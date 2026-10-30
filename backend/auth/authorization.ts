@@ -1,7 +1,7 @@
 import type { DecodedIdToken } from 'firebase-admin/auth';
-import type { UserProfile, UserRole } from '../types/user';
-import { AuthError } from './verifyToken';
-import { getUsersCollection } from '../db/mongo';
+import type { UserProfile, UserRole } from '../types/user.js';
+import { AuthError } from './verifyToken.js';
+import { getUsersCollection } from '../db/mongo.js';
 
 export async function getRequesterProfile(token: DecodedIdToken): Promise<UserProfile> {
   const users = await getUsersCollection();

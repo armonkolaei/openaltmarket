@@ -1,6 +1,6 @@
 import { getApps, initializeApp, cert, getApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { env } from '../utils/env';
+import { env } from '../utils/env.js';
 
 function getFirebaseAdminApp() {
   if (getApps().length > 0) {

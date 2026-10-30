@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { verifyRequestToken, AuthError } from '../../backend/auth/verifyToken';
-import { getRequesterProfile, isAdminRole } from '../../backend/auth/authorization';
-import { getUsersCollection } from '../../backend/db/mongo';
-import { jsonError, jsonOk, requireMethod } from '../../backend/utils/http';
-import { toUserProfileResponse } from '../../backend/users/profile';
+import { verifyRequestToken, AuthError } from '../../backend/auth/verifyToken.js';
+import { getRequesterProfile, isAdminRole } from '../../backend/auth/authorization.js';
+import { getUsersCollection } from '../../backend/db/mongo.js';
+import { jsonError, jsonOk, requireMethod } from '../../backend/utils/http.js';
+import { toUserProfileResponse } from '../../backend/users/profile.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const invalidMethod = requireMethod(req.method, 'GET');

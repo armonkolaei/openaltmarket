@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { ZodError } from 'zod';
-import { AuthError, verifyRequestToken } from '../../backend/auth/verifyToken';
-import { getRequesterProfile, isAdminRole } from '../../backend/auth/authorization';
-import { getSubmissionsCollection } from '../../backend/db/mongo';
-import { buildSubmission, parseSubmissionPayload, toSubmissionResponse } from '../../backend/submissions/submission';
-import { jsonError, jsonOk } from '../../backend/utils/http';
+import { AuthError, verifyRequestToken } from '../../backend/auth/verifyToken.js';
+import { getRequesterProfile, isAdminRole } from '../../backend/auth/authorization.js';
+import { getSubmissionsCollection } from '../../backend/db/mongo.js';
+import { buildSubmission, parseSubmissionPayload, toSubmissionResponse } from '../../backend/submissions/submission.js';
+import { jsonError, jsonOk } from '../../backend/utils/http.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method?.toUpperCase() === 'POST') {
