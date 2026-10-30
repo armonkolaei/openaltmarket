@@ -66,8 +66,18 @@ export async function syncUserProfile(payload: {
 }
 
 async function parseError(response: Response, fallback: string): Promise<Error> {
-  const errorBody = (await response.json().catch(() => ({}))) as ApiErrorBody;
-  return new Error(errorBody.error ?? fallback);
+  const contentType = response.headers.get('content-type') ?? '';
+  if (response.status === 404) {
+    return new Error('API endpoint unavailable. Run with Vercel dev or deploy API routes.');
+  }
+
+  if (contentType.includes('application/json')) {
+    const errorBody = (await response.json().catch(() => ({}))) as ApiErrorBody;
+    return new Error(errorBody.error ?? `${fallback} (HTTP ${response.status})`);
+  }
+
+  const text = (await response.text().catch(() => '')).trim();
+  return new Error(text || `${fallback} (HTTP ${response.status})`);
 }
 
 export async function createSubmission(payload: {
@@ -144,4 +154,36 @@ export async function updateUserRole(uid: string, role: UserRole): Promise<AppUs
 
   const data = (await response.json()) as { user: AppUserProfile };
   return data.user;
+}
+
+export async function reviewSubmission(id: string, status: 'approved' | 'rejected'): Promise<AppSubmission> {
+  const response = await fetch(`/api/submissions/${id}`, {
+    method: 'PATCH',
+    headers: {
+      ...defaultHeaders,
+      ...(await getAuthHeader())
+    },
+    body: JSON.stringify({ status })
+  });
+
+  if (!response.ok) {
+    throw await parseError(response, 'Unable to update submission status.');
+  }
+
+  const data = (await response.json()) as { submission: AppSubmission };
+  return data.submission;
+}
+
+export async function deleteSubmission(id: string): Promise<void> {
+  const response = await fetch(`/api/submissions/${id}`, {
+    method: 'DELETE',
+    headers: {
+      ...defaultHeaders,
+      ...(await getAuthHeader())
+    }
+  });
+
+  if (!response.ok) {
+    throw await parseError(response, 'Unable to delete submission.');
+  }
 }

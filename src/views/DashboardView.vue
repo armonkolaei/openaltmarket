@@ -2,7 +2,14 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import SiteHeader from '@/components/SiteHeader.vue';
 import { useAuthStore } from '@/stores/auth';
-import { createSubmission, fetchPendingSubmissions, fetchUsers, updateUserRole } from '@/lib/api';
+import {
+  createSubmission,
+  deleteSubmission,
+  fetchPendingSubmissions,
+  fetchUsers,
+  reviewSubmission,
+  updateUserRole
+} from '@/lib/api';
 import type { AppSubmission, AppUserProfile, UserRole } from '@/types/app';
 
 const authStore = useAuthStore();
@@ -25,6 +32,9 @@ const submissionError = ref<string | null>(null);
 const pendingSubmissions = ref<AppSubmission[]>([]);
 const pendingLoadError = ref<string | null>(null);
 const isLoadingPending = ref(false);
+const pendingActionError = ref<string | null>(null);
+const pendingActionSuccess = ref<string | null>(null);
+const pendingActionBusyId = ref<string | null>(null);
 
 const users = ref<AppUserProfile[]>([]);
 const usersLoadError = ref<string | null>(null);
@@ -84,6 +94,38 @@ async function loadPendingSubmissions() {
     pendingLoadError.value = error instanceof Error ? error.message : 'Unable to load pending submissions.';
   } finally {
     isLoadingPending.value = false;
+  }
+}
+
+async function moderateSubmission(id: string, status: 'approved' | 'rejected') {
+  pendingActionBusyId.value = id;
+  pendingActionError.value = null;
+  pendingActionSuccess.value = null;
+
+  try {
+    const updated = await reviewSubmission(id, status);
+    pendingSubmissions.value = pendingSubmissions.value.filter((item) => item.id !== id);
+    pendingActionSuccess.value = `${updated.name} marked as ${status}.`;
+  } catch (error) {
+    pendingActionError.value = error instanceof Error ? error.message : 'Unable to update submission.';
+  } finally {
+    pendingActionBusyId.value = null;
+  }
+}
+
+async function removeSubmission(id: string) {
+  pendingActionBusyId.value = id;
+  pendingActionError.value = null;
+  pendingActionSuccess.value = null;
+
+  try {
+    await deleteSubmission(id);
+    pendingSubmissions.value = pendingSubmissions.value.filter((item) => item.id !== id);
+    pendingActionSuccess.value = 'Submission deleted.';
+  } catch (error) {
+    pendingActionError.value = error instanceof Error ? error.message : 'Unable to delete submission.';
+  } finally {
+    pendingActionBusyId.value = null;
   }
 }
 
@@ -252,6 +294,8 @@ onMounted(async () => {
           <h2 class="font-display text-xl font-semibold text-slate-900">Pending Submissions</h2>
           <p class="mt-2 text-sm text-slate-600">Applications waiting for administrative review.</p>
 
+          <p v-if="pendingActionError" class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ pendingActionError }}</p>
+          <p v-if="pendingActionSuccess" class="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{{ pendingActionSuccess }}</p>
           <p v-if="pendingLoadError" class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ pendingLoadError }}</p>
           <p v-else-if="isLoadingPending" class="mt-3 text-sm text-slate-600">Loading submissions...</p>
           <p v-else-if="pendingSubmissions.length === 0" class="mt-3 text-sm text-slate-600">No pending submissions right now.</p>
@@ -265,6 +309,32 @@ onMounted(async () => {
               <p class="mt-2 text-xs text-slate-500">
                 Submitted by {{ submission.submittedByEmail }} · {{ new Date(submission.createdAt).toLocaleString() }}
               </p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  class="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                  :disabled="pendingActionBusyId === submission.id"
+                  @click="moderateSubmission(submission.id, 'approved')"
+                >
+                  Approve
+                </button>
+                <button
+                  type="button"
+                  class="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                  :disabled="pendingActionBusyId === submission.id"
+                  @click="moderateSubmission(submission.id, 'rejected')"
+                >
+                  Reject
+                </button>
+                <button
+                  type="button"
+                  class="rounded-lg bg-rose-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                  :disabled="pendingActionBusyId === submission.id"
+                  @click="removeSubmission(submission.id)"
+                >
+                  Delete
+                </button>
+              </div>
             </article>
           </div>
         </article>

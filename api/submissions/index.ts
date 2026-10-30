@@ -21,11 +21,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 async function handleCreate(req: VercelRequest, res: VercelResponse) {
   try {
     const token = await verifyRequestToken(req);
-    const profile = await getRequesterProfile(token);
+    const email = token.email;
+    if (!email) {
+      return jsonError(res, 400, 'Authenticated user email is missing from Firebase token.');
+    }
+
     const payload = parseSubmissionPayload(req.body ?? {});
 
     const submissions = await getSubmissionsCollection();
-    const created = buildSubmission(payload, profile.uid, profile.email);
+    const created = buildSubmission(payload, token.uid, email);
     const result = await submissions.insertOne(created);
     const persisted = await submissions.findOne({ _id: result.insertedId });
 
