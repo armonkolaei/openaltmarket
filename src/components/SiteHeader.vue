@@ -8,8 +8,8 @@ const route = useRoute();
 const router = useRouter();
 
 const navItems = [
-  { label: 'Explore', to: '/' },
-  { label: 'Submit App', to: '/dashboard' }
+  { label: 'Explore', to: '/explore' },
+  { label: 'Submit App', to: '/submit' }
 ];
 
 const isAuthPage = computed(() => ['/login', '/register', '/reset-password'].includes(route.path));

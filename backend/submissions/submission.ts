@@ -1,11 +1,15 @@
 import { ObjectId } from 'mongodb';
 import { z } from 'zod';
-import type { AppSubmission, AppSubmissionResponse } from '../types/submission.js';
+import type { AppSubmission, AppSubmissionResponse, PublicSubmissionResponse } from '../types/submission.js';
 
 const submissionPayloadSchema = z.object({
   name: z.string().trim().min(2).max(120),
   description: z.string().trim().min(20).max(2000),
-  websiteUrl: z.string().trim().url(),
+  websiteUrl: z
+    .string()
+    .trim()
+    .url()
+    .refine((value) => /^https?:\/\//i.test(value), 'Website URL must start with http:// or https://'),
   alternativesTo: z.array(z.string().trim().min(1).max(80)).min(1).max(20),
   keywords: z.array(z.string().trim().min(1).max(40)).min(1).max(30)
 });
@@ -59,5 +63,17 @@ export function toSubmissionResponse(doc: AppSubmission & { _id?: ObjectId }): A
     reviewedAt: doc.reviewedAt ? doc.reviewedAt.toISOString() : null,
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString()
+  };
+}
+export function toPublicSubmissionResponse(doc: AppSubmission & { _id?: ObjectId }): PublicSubmissionResponse {
+  return {
+    id: doc._id?.toString() ?? doc.id ?? '',
+    name: doc.name,
+    description: doc.description,
+    websiteUrl: doc.websiteUrl,
+    alternativesTo: doc.alternativesTo,
+    keywords: doc.keywords,
+    createdAt: doc.createdAt.toISOString(),
+    approvedAt: (doc.reviewedAt ?? doc.updatedAt).toISOString()
   };
 }

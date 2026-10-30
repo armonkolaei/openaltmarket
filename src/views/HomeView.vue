@@ -1,43 +1,33 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import SiteHeader from '@/components/SiteHeader.vue';
 import SiteFooter from '@/components/SiteFooter.vue';
-import type { CategorySummary, FeaturedAlternative } from '@/types/app';
+import AppCard from '@/components/AppCard.vue';
+import { loadCatalog, useCatalog } from '@/lib/catalog';
 
-const featuredApps: FeaturedAlternative[] = [
-  {
-    id: '1',
-    name: 'BudgetBee',
-    category: 'Finance',
-    description: 'Open-source budgeting suite with envelope planning and bank import support.',
-    stars: 4200,
-    license: 'MIT'
-  },
-  {
-    id: '2',
-    name: 'TaskLift',
-    category: 'Productivity',
-    description: 'Kanban and sprint planning workspace for distributed teams.',
-    stars: 3100,
-    license: 'Apache-2.0'
-  },
-  {
-    id: '3',
-    name: 'PaperCircuit',
-    category: 'Development',
-    description: 'Collaborative API testing platform and mock server toolkit.',
-    stars: 5800,
-    license: 'GPL-3.0'
-  }
+const router = useRouter();
+const { apps, isLoading, loadError, topReplaced, topKeywords, latest } = useCatalog();
+
+const query = ref('');
+const latestApps = computed(() => latest.value.slice(0, 6));
+const replacedCount = computed(() => new Set(apps.value.flatMap((item) => item.alternativesTo.map((name) => name.toLowerCase()))).size);
+
+const steps = [
+  { title: 'Search', text: 'Look up the app you want to replace and see community-approved alternatives.' },
+  { title: 'Compare', text: 'Filter by the tool you are leaving or by topic, then read what each option offers.' },
+  { title: 'Go', text: 'Click a result to open the alternative in a new tab.' },
+  { title: 'Contribute', text: 'Know a great alternative? Submit it and our admins will review it.' }
 ];
 
-const categories: CategorySummary[] = [
-  { id: 'finance', title: 'Finance', count: 102, description: 'Accounting, invoicing, and personal finance tools.' },
-  { id: 'productivity', title: 'Productivity', count: 168, description: 'Task, note, and collaboration applications.' },
-  { id: 'business', title: 'Business', count: 84, description: 'CRM, operations, and reporting alternatives.' },
-  { id: 'development', title: 'Development', count: 216, description: 'Dev tools, CI/CD, and platform engineering.' },
-  { id: 'design', title: 'Design', count: 63, description: 'Design, prototyping, and creative workflow software.' }
-];
+function search() {
+  router.push({ name: 'explore', query: query.value.trim() ? { q: query.value.trim() } : {} });
+}
+
+onMounted(() => {
+  void loadCatalog();
+});
 </script>
 
 <template>
@@ -47,127 +37,133 @@ const categories: CategorySummary[] = [
     </template>
 
     <section class="mx-auto max-w-7xl px-4 pt-14 sm:px-6 lg:px-8">
-      <div class="card-surface overflow-hidden p-8 md:p-12">
-        <div class="grid gap-10 lg:grid-cols-2 lg:items-center">
-          <div>
-            <p class="inline-flex rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">
-              Open-source marketplace
-            </p>
-            <h1 class="mt-5 font-display text-4xl font-bold leading-tight text-slate-900 sm:text-5xl">
-              Discover. Fork. Customize.
-            </h1>
-            <p class="mt-5 max-w-xl text-base text-slate-600 sm:text-lg">
-              OpenAltMarket helps teams replace expensive SaaS subscriptions with trusted, free, and
-              customizable alternatives.
-            </p>
+      <div class="card-surface overflow-hidden p-8 text-center md:p-14">
+        <p class="inline-flex rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">
+          Community-curated alternatives
+        </p>
+        <h1 class="mx-auto mt-5 max-w-3xl font-display text-4xl font-bold leading-tight text-slate-900 sm:text-5xl">
+          Find an open alternative to the apps you already use
+        </h1>
+        <p class="mx-auto mt-5 max-w-2xl text-base text-slate-600 sm:text-lg">
+          Search for the tool you want to replace. Every listing is submitted by the community and reviewed by an admin
+          before it appears here.
+        </p>
 
-            <form class="mt-8" role="search" aria-label="Search alternatives">
-              <label for="search" class="sr-only">Search alternatives</label>
-              <div class="flex flex-col gap-3 sm:flex-row">
-                <input
-                  id="search"
-                  type="search"
-                  class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none ring-brand-500 placeholder:text-slate-400 focus:ring-2"
-                  placeholder="Search by app name, category, or GitHub repository"
-                />
-                <button
-                  type="submit"
-                  class="rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 px-6 py-3 text-sm font-semibold text-white transition hover:from-brand-700 hover:to-brand-800"
-                >
-                  Explore Apps
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <article
-              v-for="item in featuredApps"
-              :key="item.id"
-              class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+        <form class="mx-auto mt-8 max-w-2xl" role="search" aria-label="Search alternatives" @submit.prevent="search">
+          <label for="search" class="sr-only">Search alternatives</label>
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <input
+              id="search"
+              v-model="query"
+              type="search"
+              class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none ring-brand-500 placeholder:text-slate-400 focus:ring-2"
+              placeholder="Search by app you want to replace, name, or topic"
+            />
+            <button
+              type="submit"
+              class="rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 px-6 py-3 text-sm font-semibold text-white transition hover:from-brand-700 hover:to-brand-800"
             >
-              <p class="text-xs font-semibold uppercase tracking-wide text-brand-700">{{ item.category }}</p>
-              <h2 class="mt-2 font-display text-lg font-semibold text-slate-900">{{ item.name }}</h2>
-              <p class="mt-2 text-sm text-slate-600">{{ item.description }}</p>
-              <div class="mt-4 flex items-center justify-between text-xs text-slate-500">
-                <span>{{ item.stars.toLocaleString() }} stars</span>
-                <span>{{ item.license }}</span>
-              </div>
-            </article>
+              Find alternatives
+            </button>
           </div>
-        </div>
-      </div>
-    </section>
+        </form>
 
-    <section class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
-      <h2 class="font-display text-2xl font-semibold text-slate-900">Featured Alternatives</h2>
-      <p class="mt-2 text-sm text-slate-600">Curated open-source projects ready for production adaptation.</p>
-
-      <div class="mt-6 grid gap-4 md:grid-cols-3">
-        <article
-          v-for="item in featuredApps"
-          :key="`featured-${item.id}`"
-          class="card-surface p-5 transition hover:-translate-y-0.5"
-        >
-          <p class="text-xs font-semibold uppercase tracking-wide text-brand-700">{{ item.category }}</p>
-          <h3 class="mt-2 font-display text-xl font-semibold text-slate-900">{{ item.name }}</h3>
-          <p class="mt-2 text-sm text-slate-600">{{ item.description }}</p>
-          <div class="mt-4 flex items-center gap-3 text-xs text-slate-500">
-            <span>{{ item.license }}</span>
-            <span class="h-1 w-1 rounded-full bg-slate-400" />
-            <span>{{ item.stars.toLocaleString() }} stars</span>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
-      <h2 class="font-display text-2xl font-semibold text-slate-900">Browse by Category</h2>
-      <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <article v-for="category in categories" :key="category.id" class="card-surface p-5">
-          <h3 class="font-display text-lg font-semibold text-slate-900">{{ category.title }}</h3>
-          <p class="mt-2 text-sm text-slate-600">{{ category.description }}</p>
-          <p class="mt-4 text-sm font-semibold text-brand-700">{{ category.count }} listings</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div class="grid gap-6 lg:grid-cols-3">
-        <article class="card-surface p-6">
-          <p class="text-xs font-semibold uppercase tracking-wide text-brand-700">How it works</p>
-          <h3 class="mt-2 font-display text-xl font-semibold text-slate-900">1. Discover</h3>
-          <p class="mt-2 text-sm text-slate-600">Find alternatives by use case, pricing pain point, or technology stack.</p>
-        </article>
-        <article class="card-surface p-6">
-          <p class="text-xs font-semibold uppercase tracking-wide text-brand-700">How it works</p>
-          <h3 class="mt-2 font-display text-xl font-semibold text-slate-900">2. Fork</h3>
-          <p class="mt-2 text-sm text-slate-600">Jump to source repositories and launch your own tailored instance.</p>
-        </article>
-        <article class="card-surface p-6">
-          <p class="text-xs font-semibold uppercase tracking-wide text-brand-700">How it works</p>
-          <h3 class="mt-2 font-display text-xl font-semibold text-slate-900">3. Customize</h3>
-          <p class="mt-2 text-sm text-slate-600">Adapt UX, integrations, and deployment flows for your organization.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="mx-auto mt-16 max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
-      <div class="card-surface overflow-hidden p-8 md:p-12">
-        <div class="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 class="font-display text-3xl font-semibold text-slate-900">Share your project with builders worldwide</h2>
-            <p class="mt-3 max-w-2xl text-sm text-slate-600">
-              Submit your open-source alternative and help teams move faster with transparent, hackable software.
-            </p>
-          </div>
+        <div v-if="topReplaced.length > 0" class="mx-auto mt-6 flex max-w-3xl flex-wrap items-center justify-center gap-2">
+          <span class="text-xs font-medium text-slate-500">Popular searches:</span>
           <router-link
-            to="/register"
-            class="rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700"
+            v-for="tag in topReplaced.slice(0, 8)"
+            :key="tag.label"
+            :to="{ name: 'explore', query: { replaces: tag.label } }"
+            class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:border-brand-500 hover:text-brand-700"
           >
-            Submit Your App
+            {{ tag.label }}
           </router-link>
         </div>
+
+        <dl class="mx-auto mt-10 grid max-w-xl grid-cols-3 gap-4 text-center">
+          <div>
+            <dt class="text-xs uppercase tracking-wide text-slate-500">Alternatives</dt>
+            <dd class="font-display text-2xl font-semibold text-slate-900">{{ apps.length }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs uppercase tracking-wide text-slate-500">Apps replaced</dt>
+            <dd class="font-display text-2xl font-semibold text-slate-900">{{ replacedCount }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs uppercase tracking-wide text-slate-500">Topics</dt>
+            <dd class="font-display text-2xl font-semibold text-slate-900">{{ topKeywords.length }}</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex items-end justify-between gap-4">
+        <div>
+          <h2 class="font-display text-2xl font-semibold text-slate-900">Recently added</h2>
+          <p class="mt-1 text-sm text-slate-600">Fresh alternatives approved by our reviewers.</p>
+        </div>
+        <router-link :to="{ name: 'explore' }" class="text-sm font-semibold text-brand-700 hover:text-brand-900">
+          Browse all →
+        </router-link>
+      </div>
+
+      <p v-if="loadError" class="mt-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{{ loadError }}</p>
+      <p v-else-if="isLoading && apps.length === 0" class="mt-6 text-sm text-slate-600">Loading alternatives...</p>
+      <div v-else-if="latestApps.length === 0" class="card-surface mt-6 p-8 text-center">
+        <p class="font-display text-lg font-semibold text-slate-900">No alternatives yet</p>
+        <p class="mt-1 text-sm text-slate-600">Be the first to suggest one — approved submissions show up here.</p>
+        <router-link
+          :to="{ name: 'submit' }"
+          class="mt-4 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+        >
+          Submit an app
+        </router-link>
+      </div>
+      <div v-else class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <AppCard v-for="item in latestApps" :key="item.id" :app="item" />
+      </div>
+    </section>
+
+    <section v-if="topKeywords.length > 0" class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
+      <h2 class="font-display text-2xl font-semibold text-slate-900">Browse by topic</h2>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <router-link
+          v-for="tag in topKeywords"
+          :key="tag.label"
+          :to="{ name: 'explore', query: { topic: tag.label } }"
+          class="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm text-slate-700 transition hover:border-brand-500 hover:text-brand-700"
+        >
+          #{{ tag.label }} <span class="text-xs text-slate-400">{{ tag.count }}</span>
+        </router-link>
+      </div>
+    </section>
+
+    <section class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
+      <h2 class="font-display text-2xl font-semibold text-slate-900">How it works</h2>
+      <ol class="mt-6 grid gap-4 md:grid-cols-4">
+        <li v-for="(step, index) in steps" :key="step.title" class="card-surface p-5">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-sm font-semibold text-brand-800">
+            {{ index + 1 }}
+          </span>
+          <h3 class="mt-3 font-display text-lg font-semibold text-slate-900">{{ step.title }}</h3>
+          <p class="mt-1 text-sm text-slate-600">{{ step.text }}</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="rounded-2xl bg-gradient-to-r from-brand-700 to-brand-900 p-8 text-center text-white md:p-12">
+        <h2 class="font-display text-2xl font-semibold">Know an app that deserves a spot?</h2>
+        <p class="mx-auto mt-2 max-w-xl text-sm text-brand-100">
+          Tell us your name, the app, its URL, and which tools it replaces. We will review it and publish it here.
+        </p>
+        <router-link
+          :to="{ name: 'submit' }"
+          class="mt-6 inline-flex rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-800 transition hover:bg-brand-50"
+        >
+          Submit an application
+        </router-link>
       </div>
     </section>
 

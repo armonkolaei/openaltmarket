@@ -31,3 +31,13 @@ export interface AppSubmissionResponse {
   createdAt: string;
   updatedAt: string;
 }
+export interface PublicSubmissionResponse {
+  id: string;
+  name: string;
+  description: string;
+  websiteUrl: string;
+  alternativesTo: string[];
+  keywords: string[];
+  createdAt: string;
+  approvedAt: string;
+}

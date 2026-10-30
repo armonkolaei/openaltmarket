@@ -26,6 +26,17 @@ export interface AppUserProfile {
   lastLoginAt: string;
 }
 
+export interface PublicSubmission {
+  id: string;
+  name: string;
+  description: string;
+  websiteUrl: string;
+  alternativesTo: string[];
+  keywords: string[];
+  createdAt: string;
+  approvedAt: string;
+}
+
 export interface AppSubmission {
   id: string;
   name: string;

@@ -1,5 +1,5 @@
 import { auth } from './firebase';
-import type { AppSubmission, AppUserProfile, UserRole } from '@/types/app';
+import type { AppSubmission, AppUserProfile, PublicSubmission, UserRole } from '@/types/app';
 
 interface ApiErrorBody {
   error?: string;
@@ -102,6 +102,20 @@ export async function createSubmission(payload: {
 
   const data = (await response.json()) as { submission: AppSubmission };
   return data.submission;
+}
+
+export async function fetchApprovedSubmissions(): Promise<PublicSubmission[]> {
+  const response = await fetch('/api/submissions?status=approved', {
+    method: 'GET',
+    headers: defaultHeaders
+  });
+
+  if (!response.ok) {
+    throw await parseError(response, 'Unable to load alternatives.');
+  }
+
+  const data = (await response.json()) as { submissions: PublicSubmission[] };
+  return data.submissions;
 }
 
 export async function fetchPendingSubmissions(): Promise<AppSubmission[]> {

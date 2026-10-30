@@ -4,6 +4,7 @@ import LoginView from '@/views/LoginView.vue';
 import RegisterView from '@/views/RegisterView.vue';
 import ResetPasswordView from '@/views/ResetPasswordView.vue';
 import DashboardView from '@/views/DashboardView.vue';
+import ExploreView from '@/views/ExploreView.vue';
 import NotFoundView from '@/views/NotFoundView.vue';
 import { useAuthStore } from '@/stores/auth';
 
@@ -34,10 +35,40 @@ const router = createRouter({
       meta: { requiresGuest: true }
     },
     {
+      path: '/explore',
+      name: 'explore',
+      component: ExploreView
+    },
+    {
+      path: '/submit',
+      name: 'submit',
+      redirect: { name: 'dashboard-submit' }
+    },
+    {
       path: '/dashboard',
-      name: 'dashboard',
       component: DashboardView,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
+      children: [
+        { path: '', name: 'dashboard', component: () => import('@/views/dashboard/OverviewTab.vue') },
+        { path: 'submit', name: 'dashboard-submit', component: () => import('@/views/dashboard/SubmitTab.vue') },
+        {
+          path: 'submissions',
+          name: 'dashboard-submissions',
+          component: () => import('@/views/dashboard/MySubmissionsTab.vue')
+        },
+        {
+          path: 'review',
+          name: 'dashboard-review',
+          component: () => import('@/views/dashboard/ReviewTab.vue'),
+          meta: { requiresAdmin: true }
+        },
+        {
+          path: 'users',
+          name: 'dashboard-users',
+          component: () => import('@/views/dashboard/UsersTab.vue'),
+          meta: { requiresAdmin: true }
+        }
+      ]
     },
     {
       path: '/:pathMatch(.*)*',
@@ -56,6 +87,13 @@ router.beforeEach(async (to) => {
       name: 'login',
       query: { redirect: to.fullPath }
     };
+  }
+
+  if (to.meta.requiresAdmin) {
+    const role = authStore.profile?.role;
+    if (role !== 'admin' && role !== 'super_admin') {
+      return { name: 'dashboard' };
+    }
   }
 
   if (to.meta.requiresGuest && authStore.isAuthenticated) {

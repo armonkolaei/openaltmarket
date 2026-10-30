@@ -3,7 +3,12 @@ import { ZodError } from 'zod';
 import { AuthError, verifyRequestToken } from '../../backend/auth/verifyToken.js';
 import { getRequesterProfile, isAdminRole } from '../../backend/auth/authorization.js';
 import { getSubmissionsCollection } from '../../backend/db/mongo.js';
-import { buildSubmission, parseSubmissionPayload, toSubmissionResponse } from '../../backend/submissions/submission.js';
+import {
+  buildSubmission,
+  parseSubmissionPayload,
+  toPublicSubmissionResponse,
+  toSubmissionResponse
+} from '../../backend/submissions/submission.js';
 import { jsonError, jsonOk } from '../../backend/utils/http.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -12,7 +17,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method?.toUpperCase() === 'GET') {
-    return handleListPending(req, res);
+    const status = Array.isArray(req.query?.status) ? req.query.status[0] : req.query?.status;
+    return status === 'approved' ? handleListApproved(res) : handleListPending(req, res);
   }
 
   return jsonError(res, 405, `Method ${req.method ?? 'UNKNOWN'} not allowed. Use GET or POST.`);
@@ -46,6 +52,19 @@ async function handleCreate(req: VercelRequest, res: VercelResponse) {
       return jsonError(res, 400, error.issues.map((issue) => issue.message).join('; '));
     }
 
+    const message = error instanceof Error ? error.message : 'Unexpected server error.';
+    return jsonError(res, 500, message);
+  }
+}
+
+async function handleListApproved(res: VercelResponse) {
+  try {
+    const submissions = await getSubmissionsCollection();
+    const docs = await submissions.find({ status: 'approved' }).sort({ updatedAt: -1 }).limit(500).toArray();
+
+    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    return jsonOk(res, { submissions: docs.map((doc) => toPublicSubmissionResponse(doc)) });
+  } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected server error.';
     return jsonError(res, 500, message);
   }
