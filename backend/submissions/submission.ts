@@ -8,7 +8,7 @@ import type {
   VoteValue
 } from '../types/submission.js';
 import { parseGithubUrl, type GithubSnapshot } from './github.js';
-import { getLicenseInfo, type LicenseInfo } from './licenses.js';
+import { getLicenseInfo, type LicenseInfo } from '../../shared/licenses.js';
 import { EMPTY_TOTALS } from './voteMath.js';
 
 // A repo whose license check failed (GitHub outage) must not look unlicensed or free to use.

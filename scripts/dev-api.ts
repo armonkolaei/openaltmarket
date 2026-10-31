@@ -22,14 +22,15 @@ function callHandler(
 }
 
 async function start() {
-  const [{ default: healthHandler }, { default: syncUserHandler }, { default: submissionsHandler }, { default: mySubmissionsHandler }, { default: submissionByIdHandler }, { default: adminUsersHandler }, { default: adminRolesHandler }] = await Promise.all([
+  const [{ default: healthHandler }, { default: syncUserHandler }, { default: submissionsHandler }, { default: mySubmissionsHandler }, { default: submissionByIdHandler }, { default: adminUsersHandler }, { default: adminRolesHandler }, { default: refreshGithubHandler }] = await Promise.all([
     import('../api/health'),
     import('../api/users/sync'),
     import('../api/submissions/index'),
     import('../api/submissions/mine'),
     import('../api/submissions/[id]'),
     import('../api/admin/users'),
-    import('../api/admin/roles')
+    import('../api/admin/roles'),
+    import('../api/admin/refresh-github')
   ]);
 
   app.all('/api/health', (req, res) => callHandler(healthHandler, req, res));
@@ -49,6 +50,7 @@ async function start() {
   });
   app.all('/api/admin/users', (req, res) => callHandler(adminUsersHandler, req, res));
   app.all('/api/admin/roles', (req, res) => callHandler(adminRolesHandler, req, res));
+  app.all('/api/admin/refresh-github', (req, res) => callHandler(refreshGithubHandler, req, res));
 
   app.listen(port, () => {
     console.log(`Local API server running at http://127.0.0.1:${port}`);

@@ -5,6 +5,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import SiteHeader from '@/components/SiteHeader.vue';
 import SiteFooter from '@/components/SiteFooter.vue';
 import VoteButtons from '@/components/VoteButtons.vue';
+import { fetchLiveGithubStats, type LiveGithubStats } from '@/lib/githubPreview';
 import { fetchSubmission } from '@/lib/api';
 import { loadCatalog, useCatalog } from '@/lib/catalog';
 import {
@@ -38,7 +39,14 @@ const app = computed<PublicSubmission | null>(() => {
     : fetched.value;
 });
 
-const repo = computed(() => app.value?.github ?? null);
+const live = ref<LiveGithubStats | null>(null);
+
+// Stored snapshot (refreshed by cron/admin) with the visitor's live GitHub numbers laid over it.
+const repo = computed(() => {
+  const snapshot = app.value?.github ?? null;
+  if (!snapshot) return null;
+  return live.value ? { ...snapshot, ...live.value, pushedAt: live.value.pushedAt ?? snapshot.pushedAt } : snapshot;
+});
 const license = computed(() => app.value?.licenseInfo ?? null);
 const activity = computed(() => (repo.value ? activityOf(repo.value) : null));
 const languages = computed(() => (repo.value ? languageBreakdown(repo.value) : []));
@@ -74,6 +82,13 @@ async function load() {
   try {
     fetched.value = await fetchSubmission(String(route.params.id));
     document.title = `${fetched.value.name} · OpenAltMarket`;
+    live.value = null;
+    if (fetched.value.github) {
+      const id = fetched.value.id;
+      void fetchLiveGithubStats(fetched.value.github.fullName).then((stats) => {
+        if (fetched.value?.id === id) live.value = stats;
+      });
+    }
   } catch (err) {
     fetched.value = null;
     loadError.value = err instanceof Error ? err.message : 'Unable to load this alternative.';
@@ -200,7 +215,7 @@ onMounted(() => {
           <h2 id="repo-heading" class="font-display text-xl font-semibold text-slate-900">
             Source repository
             <span class="text-sm font-normal text-slate-500">
-              (from GitHub as of {{ formatDate(repo.fetchedAt) }} · {{ repo.fullName }})
+              ({{ live ? 'live from GitHub' : `from GitHub as of ${formatDate(repo.fetchedAt)}` }} · {{ repo.fullName }})
             </span>
           </h2>
 

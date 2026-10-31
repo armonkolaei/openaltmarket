@@ -6,7 +6,7 @@ import {
   verifyGithubUrl
 } from '../../backend/submissions/github';
 import { parseSubmissionPayload, licenseInfoFor } from '../../backend/submissions/submission';
-import { getLicenseInfo } from '../../backend/submissions/licenses';
+import { getLicenseInfo } from '../../shared/licenses';
 
 const json = (status: number, body: unknown) =>
   (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;

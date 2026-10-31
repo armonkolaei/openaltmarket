@@ -294,6 +294,30 @@ export async function reviewSubmission(id: string, status: 'approved' | 'rejecte
   return data.submission;
 }
 
+export interface GithubRefreshSummary {
+  checked: number;
+  updated: number;
+  missing: number;
+  stoppedEarly: boolean;
+}
+
+export async function refreshGithubData(id?: string): Promise<GithubRefreshSummary> {
+  const response = await fetch('/api/admin/refresh-github', {
+    method: 'POST',
+    headers: {
+      ...defaultHeaders,
+      ...(await getAuthHeader())
+    },
+    body: JSON.stringify(id ? { id } : {})
+  });
+
+  if (!response.ok) {
+    throw await parseError(response, 'Unable to refresh GitHub data.');
+  }
+
+  return ((await response.json()) as { summary: GithubRefreshSummary }).summary;
+}
+
 export async function deleteSubmission(id: string): Promise<void> {
   const response = await fetch(`/api/submissions/${id}`, {
     method: 'DELETE',

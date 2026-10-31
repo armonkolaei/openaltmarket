@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue';
-import { deleteSubmission, fetchPendingSubmissions, updateSubmission, type AdminStatusFilter } from '@/lib/api';
+import { deleteSubmission, fetchPendingSubmissions, refreshGithubData, updateSubmission, type AdminStatusFilter } from '@/lib/api';
 import { loadCatalog } from '@/lib/catalog';
 import type { AppSubmission } from '@/types/app';
 
@@ -118,6 +118,18 @@ function remove(item: AppSubmission) {
   });
 }
 
+async function refreshGithub() {
+  return run('refresh-all', async () => {
+    const summary = await refreshGithubData();
+    actionSuccess.value =
+      `Refreshed ${summary.updated} of ${summary.checked} repositories` +
+      (summary.missing ? `, ${summary.missing} no longer found on GitHub` : '') +
+      (summary.stoppedEarly ? '. Stopped early because GitHub is limiting requests; try again later.' : '.');
+    await load();
+    void loadCatalog(true);
+  });
+}
+
 watch(status, load);
 watch(search, () => {
   clearTimeout(searchTimer);
@@ -129,7 +141,17 @@ onMounted(load);
 
 <template>
   <article class="card-surface p-5">
-    <h2 class="font-display text-xl font-semibold text-slate-900">All submissions</h2>
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <h2 class="font-display text-xl font-semibold text-slate-900">All submissions</h2>
+      <button
+        type="button"
+        class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        :disabled="busyId === 'refresh-all'"
+        @click="refreshGithub"
+      >
+        {{ busyId === 'refresh-all' ? 'Refreshing...' : 'Refresh GitHub data' }}
+      </button>
+    </div>
     <p class="mt-1 text-sm text-slate-600">
       Search every submission, edit its details, change its status or remove it from the site entirely.
     </p>

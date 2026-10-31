@@ -9,9 +9,9 @@ import {
   NO_GITHUB,
   parseSubmissionPayload,
   toPublicSubmissionResponse,
-  toSubmissionResponse
+  toSubmissionResponse,
+  type GithubFields
 } from '../../backend/submissions/submission.js';
-import { GithubLookupError, verifyGithubUrl } from '../../backend/submissions/github.js';
 import { getUserVotes, getVoteTotals } from '../../backend/submissions/votes.js';
 import type { AppSubmission, VoteValue } from '../../backend/types/submission.js';
 import { jsonError, jsonOk } from '../../backend/utils/http.js';
@@ -39,7 +39,9 @@ async function handleCreate(req: VercelRequest, res: VercelResponse) {
     }
 
     const payload = parseSubmissionPayload(req.body ?? {});
-    const github = payload.githubUrl ? await verifyGithubUrl(payload.githubUrl) : NO_GITHUB;
+    // GitHub is deliberately not called here: the browser previews the repo, and the server reads it
+    // itself (with its own trusted data) when an admin approves the submission.
+    const github: GithubFields = payload.githubUrl ? { ...NO_GITHUB, githubUrl: payload.githubUrl } : NO_GITHUB;
 
     const submissions = await getSubmissionsCollection();
     const created = buildSubmission(payload, token.uid, email, github);
@@ -57,9 +59,6 @@ async function handleCreate(req: VercelRequest, res: VercelResponse) {
     }
     if (error instanceof ZodError) {
       return jsonError(res, 400, error.issues.map((issue) => issue.message).join('; '));
-    }
-    if (error instanceof GithubLookupError) {
-      return jsonError(res, 400, error.message);
     }
 
     const message = error instanceof Error ? error.message : 'Unexpected server error.';

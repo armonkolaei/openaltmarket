@@ -1,5 +1,5 @@
 import type { GithubSnapshot } from '../submissions/github.js';
-import type { LicenseInfo } from '../submissions/licenses.js';
+import type { LicenseInfo } from '../../shared/licenses.js';
 
 export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
 

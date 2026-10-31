@@ -52,28 +52,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   return jsonError(res, 405, `Method ${req.method ?? 'UNKNOWN'} not allowed. Use GET, PATCH, PUT or DELETE.`);
 }
 
-const SNAPSHOT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
-
 async function handleGetPublic(req: VercelRequest, res: VercelResponse, submissionId: string) {
   try {
     const submissions = await getSubmissionsCollection();
-    let doc = await submissions.findOne({ _id: new ObjectId(submissionId), status: 'approved' });
+    // Read-only: snapshots are refreshed by the cron job / admin button, and live stats come from the browser.
+    const doc = await submissions.findOne({ _id: new ObjectId(submissionId), status: 'approved' });
     if (!doc) {
       return jsonError(res, 404, 'Alternative not found.');
-    }
-
-    // GitHub stats go stale, so refresh them lazily; a failed refresh just keeps the old snapshot.
-    const fetchedAt = doc.github?.fetchedAt ? Date.parse(doc.github.fetchedAt) : 0;
-    if (doc.githubUrl && Date.now() - fetchedAt > SNAPSHOT_MAX_AGE_MS) {
-      const refreshed = await verifyGithubUrl(doc.githubUrl).catch(() => null);
-      if (refreshed?.github) {
-        doc =
-          (await submissions.findOneAndUpdate(
-            { _id: doc._id },
-            { $set: { license: refreshed.license, licenseCheckedAt: refreshed.licenseCheckedAt, github: refreshed.github } },
-            { returnDocument: 'after' }
-          )) ?? doc;
-      }
     }
 
     const totals = (await getVoteTotals([submissionId])).get(submissionId);
@@ -147,11 +132,13 @@ async function handleReview(req: VercelRequest, res: VercelResponse, submissionI
     if (githubUrl !== undefined) {
       github = githubUrl ? await verifyGithubUrl(githubUrl) : NO_GITHUB;
     } else if (status === 'approved') {
-      // Licenses can change after submission, so re-check before publishing.
+      // The browser's preview is never trusted, so approval is where the server reads the repo itself.
+      // A missing repo blocks approval (GithubLookupError -> 400); a GitHub outage approves it unverified,
+      // and the details page re-checks later.
       const existing = await submissions.findOne({ _id: new ObjectId(submissionId) });
       if (existing?.githubUrl) {
-        const refreshed = await verifyGithubUrl(existing.githubUrl).catch(() => null);
-        if (refreshed?.licenseCheckedAt) {
+        const refreshed = await verifyGithubUrl(existing.githubUrl);
+        if (refreshed.licenseCheckedAt) {
           github = refreshed;
         }
       }

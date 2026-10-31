@@ -11,6 +11,8 @@ MONGODB_DB_NAME=openaltmarket
 
 # Optional: raises the GitHub API rate limit (60/hr -> 5000/hr) for repo/license checks
 GITHUB_TOKEN=
+# Secret Vercel Cron sends to /api/admin/refresh-github (the daily GitHub snapshot refresh)
+CRON_SECRET=
 
 FIREBASE_PROJECT_ID=
 FIREBASE_CLIENT_EMAIL=

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
+import GithubCheck from '@/components/GithubCheck.vue';
 import { deleteSubmission, fetchPendingSubmissions, reviewSubmission } from '@/lib/api';
 import { loadCatalog } from '@/lib/catalog';
 import type { AppSubmission } from '@/types/app';
@@ -83,6 +84,7 @@ onMounted(load);
           · License: {{ submission.license ?? (submission.licenseCheckedAt ? 'none detected' : 'unverified') }}
           <span v-if="submission.isFreeToUse" class="font-semibold text-amber-700">· Gold (free to use)</span>
         </p>
+        <GithubCheck v-if="submission.githubUrl" :url="submission.githubUrl" :auto="false" />
         <p class="mt-2 text-xs text-slate-500">Alternative to: {{ submission.alternativesTo.join(', ') }}</p>
         <p class="text-xs text-slate-500">Keywords: {{ submission.keywords.join(', ') }}</p>
         <p class="mt-1 text-xs text-slate-500">

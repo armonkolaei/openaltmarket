@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
+import GithubCheck from '@/components/GithubCheck.vue';
 import { useAuthStore } from '@/stores/auth';
 import { createSubmission } from '@/lib/api';
+import type { GithubPreviewResult } from '@/lib/githubPreview';
 
 const authStore = useAuthStore();
 
@@ -9,6 +11,27 @@ const form = reactive({ name: '', description: '', websiteUrl: '', githubUrl: ''
 const isSubmitting = ref(false);
 const success = ref<string | null>(null);
 const error = ref<string | null>(null);
+const githubResult = ref<GithubPreviewResult | null>(null);
+
+// A repository GitHub says does not exist (or is private) blocks the submit; an outage or rate limit does not.
+const githubBlocked = computed(
+  () => form.githubUrl.trim() !== '' && (githubResult.value?.status === 'invalid' || githubResult.value?.status === 'not_found')
+);
+
+// Prefill only fields the submitter has not already filled in.
+function onGithubResult(result: GithubPreviewResult | null) {
+  githubResult.value = result;
+  if (result?.status !== 'ok') return;
+  const { preview } = result;
+  if (!form.name.trim()) form.name = preview.name;
+  if (!form.description.trim() && preview.description && preview.description.length >= 20) {
+    form.description = preview.description;
+  }
+  if (!form.websiteUrl.trim() && preview.homepage && /^https?:\/\//i.test(preview.homepage)) {
+    form.websiteUrl = preview.homepage;
+  }
+  if (!form.keywords.trim() && preview.topics.length > 0) form.keywords = preview.topics.slice(0, 8).join(', ');
+}
 
 const parseCsv = (input: string) =>
   input
@@ -54,6 +77,14 @@ const inputClass =
 
     <form class="mt-5 space-y-4" @submit.prevent="submit">
       <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700" for="submission-github">GitHub URL (optional)</label>
+        <input id="submission-github" v-model="form.githubUrl" type="url" maxlength="200" :class="inputClass" placeholder="https://github.com/owner/repo" />
+        <p class="mt-1 text-xs text-slate-500">
+          Paste a public repository to fill in the details below automatically. Apps with a free-to-use open source license get a gold badge.
+        </p>
+        <GithubCheck :url="form.githubUrl" @result="onGithubResult" />
+      </div>
+      <div>
         <label class="mb-1 block text-sm font-medium text-slate-700" for="submission-name">App name</label>
         <input id="submission-name" v-model="form.name" type="text" required minlength="2" maxlength="120" :class="inputClass" placeholder="Worthgrid" />
       </div>
@@ -75,13 +106,6 @@ const inputClass =
         <input id="submission-url" v-model="form.websiteUrl" type="url" required :class="inputClass" placeholder="https://worthgrid.com" />
       </div>
       <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700" for="submission-github">GitHub URL (optional)</label>
-        <input id="submission-github" v-model="form.githubUrl" type="url" maxlength="200" :class="inputClass" placeholder="https://github.com/owner/repo" />
-        <p class="mt-1 text-xs text-slate-500">
-          We verify the repository and read its license. Apps with a free-to-use open source license get a gold badge.
-        </p>
-      </div>
-      <div>
         <label class="mb-1 block text-sm font-medium text-slate-700" for="submission-alternatives">Alternatives to</label>
         <input id="submission-alternatives" v-model="form.alternativesTo" type="text" required :class="inputClass" placeholder="wealthica, mint" />
         <p class="mt-1 text-xs text-slate-500">The apps or websites this replaces, separated by commas.</p>
@@ -101,7 +125,7 @@ const inputClass =
       <button
         type="submit"
         class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
-        :disabled="isSubmitting"
+        :disabled="isSubmitting || githubBlocked"
       >
         {{ isSubmitting ? 'Submitting...' : 'Submit Suggestion' }}
       </button>

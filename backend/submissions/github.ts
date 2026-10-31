@@ -1,6 +1,8 @@
-import { isFreeUseLicense } from './licenses.js';
+import { isFreeUseLicense } from '../../shared/licenses.js';
+import { parseGithubUrl, type GithubRepoRef } from '../../shared/githubUrl.js';
 
-export { isFreeUseLicense };
+export { isFreeUseLicense, parseGithubUrl };
+export type { GithubRepoRef };
 
 export interface GithubLanguage {
   name: string;
@@ -32,12 +34,6 @@ export interface GithubSnapshot {
   fetchedAt: string;
 }
 
-export interface GithubRepoRef {
-  owner: string;
-  repo: string;
-  url: string;
-}
-
 export interface VerifiedGithub {
   githubUrl: string;
   license: string | null;
@@ -55,23 +51,6 @@ export class GithubLookupError extends Error {
     super(message);
     this.name = 'GithubLookupError';
   }
-}
-
-const REPO_PATTERN = /^https?:\/\/(?:www\.)?github\.com\/([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))\/([A-Za-z0-9._-]{1,100})(?:[/?#].*)?$/i;
-
-export function parseGithubUrl(input: string): GithubRepoRef | null {
-  const match = REPO_PATTERN.exec(input.trim());
-  if (!match) {
-    return null;
-  }
-
-  const owner = match[1];
-  const repo = match[2]?.replace(/\.git$/i, '');
-  if (!owner || !repo || repo === '.' || repo === '..') {
-    return null;
-  }
-
-  return { owner, repo, url: `https://github.com/${owner}/${repo}` };
 }
 
 function requestHeaders(): Record<string, string> {

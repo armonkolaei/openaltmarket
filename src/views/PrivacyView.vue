@@ -32,7 +32,11 @@ import LegalPage from '@/components/LegalPage.vue';
     <h2>2. Information we do not collect</h2>
     <ul>
       <li>We do not run advertising, sell personal information, or use third-party advertising trackers.</li>
-      <li>We do not send your personal information to GitHub. Repository checks use only the public repository URL.</li>
+      <li>
+        We never send your account details to GitHub. When you paste a GitHub link on the submit form (or an admin
+        previews one), your browser contacts GitHub directly, so GitHub sees your IP address and the repository you asked
+        about, under its own privacy statement.
+      </li>
     </ul>
 
     <h2>3. How we use information</h2>
@@ -56,8 +60,10 @@ import LegalPage from '@/components/LegalPage.vue';
       <li><strong>MongoDB</strong> database hosting to store profiles, submissions, and votes.</li>
       <li><strong>Vercel</strong> to host and deliver the Service.</li>
       <li>
-        <strong>GitHub</strong>: our servers call GitHub's public API to read repository details. Your browser may also load
-        repository owner images from GitHub's servers, which then receives your IP address under
+        <strong>GitHub</strong>: our servers call GitHub's public API, without any personal information, to read repository
+        details when a submission is approved and on a scheduled refresh. Your browser also contacts GitHub directly for
+        repository previews on the submit form and for live statistics on app pages, and loads repository owner images
+        from GitHub's servers, which then receive your IP address under
         <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer">GitHub's privacy statement</a>.
       </li>
     </ul>
