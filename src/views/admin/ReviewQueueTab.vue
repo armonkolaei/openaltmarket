@@ -77,6 +77,12 @@ onMounted(load);
         <a :href="submission.websiteUrl" target="_blank" rel="noopener noreferrer" class="mt-2 inline-block break-all text-sm text-brand-700 hover:text-brand-900">
           {{ submission.websiteUrl }}
         </a>
+        <p v-if="submission.githubUrl" class="mt-1 text-xs text-slate-600">
+          GitHub:
+          <a :href="submission.githubUrl" target="_blank" rel="noopener noreferrer" class="text-brand-700 hover:text-brand-900">{{ submission.githubUrl }}</a>
+          · License: {{ submission.license ?? (submission.licenseCheckedAt ? 'none detected' : 'unverified') }}
+          <span v-if="submission.isFreeToUse" class="font-semibold text-amber-700">· Gold (free to use)</span>
+        </p>
         <p class="mt-2 text-xs text-slate-500">Alternative to: {{ submission.alternativesTo.join(', ') }}</p>
         <p class="text-xs text-slate-500">Keywords: {{ submission.keywords.join(', ') }}</p>
         <p class="mt-1 text-xs text-slate-500">

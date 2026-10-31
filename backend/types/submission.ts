@@ -5,6 +5,9 @@ export interface AppSubmission {
   name: string;
   description: string;
   websiteUrl: string;
+  githubUrl?: string | null;
+  license?: string | null;
+  licenseCheckedAt?: Date | null;
   alternativesTo: string[];
   keywords: string[];
   submittedByUid: string;
@@ -21,6 +24,10 @@ export interface AppSubmissionResponse {
   name: string;
   description: string;
   websiteUrl: string;
+  githubUrl: string | null;
+  license: string | null;
+  licenseCheckedAt: string | null;
+  isFreeToUse: boolean;
   alternativesTo: string[];
   keywords: string[];
   submittedByUid: string;
@@ -36,6 +43,9 @@ export interface PublicSubmissionResponse {
   name: string;
   description: string;
   websiteUrl: string;
+  githubUrl: string | null;
+  license: string | null;
+  isFreeToUse: boolean;
   alternativesTo: string[];
   keywords: string[];
   createdAt: string;

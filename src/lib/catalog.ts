@@ -54,6 +54,12 @@ export function countTags(items: PublicSubmission[], pick: (item: PublicSubmissi
   return [...counts.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)).slice(0, limit);
 }
 
+export const GOLD_RANK_BOOST = 5;
+
+export function rankScore(item: PublicSubmission): number {
+  return item.score + (item.isFreeToUse ? GOLD_RANK_BOOST : 0);
+}
+
 export function filterApps(
   items: PublicSubmission[],
   query: string,
@@ -84,6 +90,11 @@ export function useCatalog() {
     topKeywords: computed(() => countTags(apps.value, (item) => item.keywords)),
     latest: computed(() =>
       [...apps.value].sort((a, b) => b.approvedAt.localeCompare(a.approvedAt))
+    ),
+    featured: computed(() =>
+      apps.value
+        .filter((item) => item.isFreeToUse)
+        .sort((a, b) => rankScore(b) - rankScore(a) || b.approvedAt.localeCompare(a.approvedAt))
     ),
     reload: () => loadCatalog(true)
   };

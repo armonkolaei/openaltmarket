@@ -9,6 +9,9 @@ VITE_FIREBASE_APP_ID=
 MONGODB_URI=
 MONGODB_DB_NAME=openaltmarket
 
+# Optional: raises the GitHub API rate limit (60/hr -> 5000/hr) for repo/license checks
+GITHUB_TOKEN=
+
 FIREBASE_PROJECT_ID=
 FIREBASE_CLIENT_EMAIL=
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nREPLACE_ME\n-----END PRIVATE KEY-----\n"

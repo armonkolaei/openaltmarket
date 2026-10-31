@@ -28,7 +28,7 @@ const busyId = ref<string | null>(null);
 const confirmDeleteId = ref<string | null>(null);
 
 const editingId = ref<string | null>(null);
-const form = reactive({ name: '', description: '', websiteUrl: '', alternativesTo: '', keywords: '' });
+const form = reactive({ name: '', description: '', websiteUrl: '', githubUrl: '', alternativesTo: '', keywords: '' });
 
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -56,6 +56,7 @@ function startEdit(item: AppSubmission) {
   form.name = item.name;
   form.description = item.description;
   form.websiteUrl = item.websiteUrl;
+  form.githubUrl = item.githubUrl ?? '';
   form.alternativesTo = item.alternativesTo.join(', ');
   form.keywords = item.keywords.join(', ');
   actionError.value = null;
@@ -87,6 +88,7 @@ function saveEdit(id: string) {
       name: form.name,
       description: form.description,
       websiteUrl: form.websiteUrl,
+      githubUrl: form.githubUrl.trim() || null,
       alternativesTo: splitList(form.alternativesTo),
       keywords: splitList(form.keywords)
     });
@@ -172,6 +174,10 @@ onMounted(load);
             <input v-model="form.websiteUrl" required type="url" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
           </label>
           <label class="block text-xs font-medium text-slate-600">
+            GitHub URL (optional, verified on save)
+            <input v-model="form.githubUrl" type="url" maxlength="200" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+          </label>
+          <label class="block text-xs font-medium text-slate-600">
             Description
             <textarea v-model="form.description" required minlength="20" maxlength="2000" rows="3" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></textarea>
           </label>
@@ -204,6 +210,12 @@ onMounted(load);
           <a :href="item.websiteUrl" target="_blank" rel="noopener noreferrer" class="mt-2 inline-block break-all text-sm text-brand-700 hover:text-brand-900">
             {{ item.websiteUrl }}
           </a>
+          <p v-if="item.githubUrl" class="mt-1 text-xs text-slate-600">
+            GitHub:
+            <a :href="item.githubUrl" target="_blank" rel="noopener noreferrer" class="text-brand-700 hover:text-brand-900">{{ item.githubUrl }}</a>
+            · License: {{ item.license ?? (item.licenseCheckedAt ? 'none detected' : 'unverified') }}
+            <span v-if="item.isFreeToUse" class="font-semibold text-amber-700">· Gold (free to use)</span>
+          </p>
           <p class="mt-2 text-xs text-slate-500">Alternative to: {{ item.alternativesTo.join(', ') }}</p>
           <p class="text-xs text-slate-500">Keywords: {{ item.keywords.join(', ') }}</p>
           <p class="mt-1 text-xs text-slate-500">

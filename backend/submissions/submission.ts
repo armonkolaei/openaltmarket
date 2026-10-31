@@ -7,7 +7,12 @@ import type {
   VoteTotals,
   VoteValue
 } from '../types/submission.js';
+import { isFreeUseLicense, parseGithubUrl } from './github.js';
 import { EMPTY_TOTALS } from './voteMath.js';
+
+function hasFreeUse(doc: AppSubmission): boolean {
+  return !!doc.githubUrl && isFreeUseLicense(doc.license);
+}
 
 const submissionPayloadSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -17,6 +22,26 @@ const submissionPayloadSchema = z.object({
     .trim()
     .url()
     .refine((value) => /^https?:\/\//i.test(value), 'Website URL must start with http:// or https://'),
+  // Optional: empty clears it, anything else must be a github.com/owner/repo URL.
+  githubUrl: z
+    .string()
+    .trim()
+    .max(200)
+    .nullish()
+    .transform((value, ctx) => {
+      if (value === undefined) return undefined;
+      if (!value) return null;
+      const ref = parseGithubUrl(value);
+      if (!ref) {
+        ctx.issues.push({
+          code: 'custom',
+          message: 'GitHub URL must look like https://github.com/owner/repo',
+          input: value
+        });
+        return z.NEVER;
+      }
+      return ref.url;
+    }),
   alternativesTo: z.array(z.string().trim().min(1).max(80)).min(1).max(20),
   keywords: z.array(z.string().trim().min(1).max(40)).min(1).max(30)
 });
@@ -29,9 +54,18 @@ export interface SubmissionPayload {
   name: string;
   description: string;
   websiteUrl: string;
+  githubUrl?: string | null;
   alternativesTo: string[];
   keywords: string[];
 }
+
+export interface GithubFields {
+  githubUrl: string | null;
+  license: string | null;
+  licenseCheckedAt: Date | null;
+}
+
+export const NO_GITHUB: GithubFields = { githubUrl: null, license: null, licenseCheckedAt: null };
 
 export function parseSubmissionPayload(input: unknown): SubmissionPayload {
   return submissionPayloadSchema.parse(input);
@@ -40,13 +74,15 @@ export function parseSubmissionPayload(input: unknown): SubmissionPayload {
 export function buildSubmission(
   payload: SubmissionPayload,
   submittedByUid: string,
-  submittedByEmail: string
+  submittedByEmail: string,
+  github: GithubFields = NO_GITHUB
 ): AppSubmission {
   const now = new Date();
   return {
     name: payload.name,
     description: payload.description,
     websiteUrl: payload.websiteUrl,
+    ...github,
     alternativesTo: payload.alternativesTo,
     keywords: payload.keywords,
     submittedByUid,
@@ -65,6 +101,10 @@ export function toSubmissionResponse(doc: AppSubmission & { _id?: ObjectId }): A
     name: doc.name,
     description: doc.description,
     websiteUrl: doc.websiteUrl,
+    githubUrl: doc.githubUrl ?? null,
+    license: doc.license ?? null,
+    licenseCheckedAt: doc.licenseCheckedAt ? doc.licenseCheckedAt.toISOString() : null,
+    isFreeToUse: hasFreeUse(doc),
     alternativesTo: doc.alternativesTo,
     keywords: doc.keywords,
     submittedByUid: doc.submittedByUid,
@@ -86,6 +126,9 @@ export function toPublicSubmissionResponse(
     name: doc.name,
     description: doc.description,
     websiteUrl: doc.websiteUrl,
+    githubUrl: doc.githubUrl ?? null,
+    license: doc.license ?? null,
+    isFreeToUse: hasFreeUse(doc),
     alternativesTo: doc.alternativesTo,
     keywords: doc.keywords,
     createdAt: doc.createdAt.toISOString(),

@@ -5,7 +5,7 @@ import { createSubmission } from '@/lib/api';
 
 const authStore = useAuthStore();
 
-const form = reactive({ name: '', description: '', websiteUrl: '', alternativesTo: '', keywords: '' });
+const form = reactive({ name: '', description: '', websiteUrl: '', githubUrl: '', alternativesTo: '', keywords: '' });
 const isSubmitting = ref(false);
 const success = ref<string | null>(null);
 const error = ref<string | null>(null);
@@ -25,10 +25,11 @@ async function submit() {
       name: form.name,
       description: form.description,
       websiteUrl: form.websiteUrl,
+      githubUrl: form.githubUrl.trim() || null,
       alternativesTo: parseCsv(form.alternativesTo),
       keywords: parseCsv(form.keywords)
     });
-    Object.assign(form, { name: '', description: '', websiteUrl: '', alternativesTo: '', keywords: '' });
+    Object.assign(form, { name: '', description: '', websiteUrl: '', githubUrl: '', alternativesTo: '', keywords: '' });
     success.value = 'Submission received and queued for admin review.';
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Unable to submit suggestion.';
@@ -72,6 +73,13 @@ const inputClass =
       <div>
         <label class="mb-1 block text-sm font-medium text-slate-700" for="submission-url">Website URL</label>
         <input id="submission-url" v-model="form.websiteUrl" type="url" required :class="inputClass" placeholder="https://worthgrid.com" />
+      </div>
+      <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700" for="submission-github">GitHub URL (optional)</label>
+        <input id="submission-github" v-model="form.githubUrl" type="url" maxlength="200" :class="inputClass" placeholder="https://github.com/owner/repo" />
+        <p class="mt-1 text-xs text-slate-500">
+          We verify the repository and read its license. Apps with a free-to-use open source license get a gold badge.
+        </p>
       </div>
       <div>
         <label class="mb-1 block text-sm font-medium text-slate-700" for="submission-alternatives">Alternatives to</label>

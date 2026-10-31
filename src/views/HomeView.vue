@@ -8,10 +8,11 @@ import AppCard from '@/components/AppCard.vue';
 import { loadCatalog, useCatalog } from '@/lib/catalog';
 
 const router = useRouter();
-const { apps, isLoading, loadError, topReplaced, topKeywords, latest } = useCatalog();
+const { apps, isLoading, loadError, topReplaced, topKeywords, latest, featured } = useCatalog();
 
 const query = ref('');
 const latestApps = computed(() => latest.value.slice(0, 6));
+const featuredApps = computed(() => featured.value.slice(0, 3));
 const replacedCount = computed(() => new Set(apps.value.flatMap((item) => item.alternativesTo.map((name) => name.toLowerCase()))).size);
 
 const steps = [
@@ -94,6 +95,14 @@ onMounted(() => {
             <dd class="font-display text-2xl font-semibold text-slate-900">{{ topKeywords.length }}</dd>
           </div>
         </dl>
+      </div>
+    </section>
+
+    <section v-if="featuredApps.length > 0" class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
+      <h2 class="font-display text-2xl font-semibold text-slate-900">★ Featured open source</h2>
+      <p class="mt-1 text-sm text-slate-600">Free to use, modify and sell — verified from each project's GitHub license.</p>
+      <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <AppCard v-for="item in featuredApps" :key="item.id" :app="item" />
       </div>
     </section>
 

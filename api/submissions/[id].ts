@@ -4,7 +4,13 @@ import { z, ZodError } from 'zod';
 import { AuthError, verifyRequestToken } from '../../backend/auth/verifyToken.js';
 import { assertActiveUser, getRequesterProfile, isAdminRole } from '../../backend/auth/authorization.js';
 import { getSubmissionsCollection, getVotesCollection } from '../../backend/db/mongo.js';
-import { submissionEditSchema, toSubmissionResponse } from '../../backend/submissions/submission.js';
+import {
+  NO_GITHUB,
+  submissionEditSchema,
+  toSubmissionResponse,
+  type GithubFields
+} from '../../backend/submissions/submission.js';
+import { GithubLookupError, verifyGithubUrl } from '../../backend/submissions/github.js';
 import { EMPTY_TOTALS } from '../../backend/submissions/voteMath.js';
 import { getVoteTotals, setVote } from '../../backend/submissions/votes.js';
 import { jsonError, jsonOk } from '../../backend/utils/http.js';
@@ -83,15 +89,31 @@ async function handleReview(req: VercelRequest, res: VercelResponse, submissionI
     const admin = await assertAdmin(req);
     const payload = reviewPayloadSchema.parse(req.body ?? {});
 
+    const { status, githubUrl, ...edits } = payload;
+
     const submissions = await getSubmissionsCollection();
     const now = new Date();
-    const { status, ...edits } = payload;
+
+    let github: GithubFields | null = null;
+    if (githubUrl !== undefined) {
+      github = githubUrl ? await verifyGithubUrl(githubUrl) : NO_GITHUB;
+    } else if (status === 'approved') {
+      // Licenses can change after submission, so re-check before publishing.
+      const existing = await submissions.findOne({ _id: new ObjectId(submissionId) });
+      if (existing?.githubUrl) {
+        const refreshed = await verifyGithubUrl(existing.githubUrl).catch(() => null);
+        if (refreshed?.licenseCheckedAt) {
+          github = refreshed;
+        }
+      }
+    }
 
     const result = await submissions.findOneAndUpdate(
       { _id: new ObjectId(submissionId) },
       {
         $set: {
           ...edits,
+          ...(github ?? {}),
           ...(status
             ? status === 'pending'
               ? { status, reviewedByUid: null, reviewedAt: null }
@@ -114,6 +136,9 @@ async function handleReview(req: VercelRequest, res: VercelResponse, submissionI
     }
     if (error instanceof ZodError) {
       return jsonError(res, 400, error.issues.map((issue) => issue.message).join('; '));
+    }
+    if (error instanceof GithubLookupError) {
+      return jsonError(res, 400, error.message);
     }
 
     const message = error instanceof Error ? error.message : 'Unexpected server error.';

@@ -5,7 +5,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import SiteHeader from '@/components/SiteHeader.vue';
 import SiteFooter from '@/components/SiteFooter.vue';
 import AppCard from '@/components/AppCard.vue';
-import { countTags, filterApps, loadCatalog, useCatalog } from '@/lib/catalog';
+import { countTags, filterApps, loadCatalog, rankScore, useCatalog } from '@/lib/catalog';
 
 const route = useRoute();
 const router = useRouter();
@@ -23,7 +23,7 @@ const sort = ref<'top' | 'newest'>('top');
 const results = computed(() =>
   [...filterApps(apps.value, query.value, replaces.value, topic.value)].sort((a, b) =>
     sort.value === 'top'
-      ? b.score - a.score || b.approvedAt.localeCompare(a.approvedAt)
+      ? rankScore(b) - rankScore(a) || b.approvedAt.localeCompare(a.approvedAt)
       : b.approvedAt.localeCompare(a.approvedAt)
   )
 );

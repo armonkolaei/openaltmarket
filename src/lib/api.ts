@@ -84,6 +84,7 @@ export async function createSubmission(payload: {
   name: string;
   description: string;
   websiteUrl: string;
+  githubUrl?: string | null;
   alternativesTo: string[];
   keywords: string[];
 }): Promise<AppSubmission> {
@@ -214,6 +215,7 @@ export interface SubmissionEdits {
   name?: string;
   description?: string;
   websiteUrl?: string;
+  githubUrl?: string | null;
   alternativesTo?: string[];
   keywords?: string[];
 }

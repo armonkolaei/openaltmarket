@@ -6,10 +6,12 @@ import { assertActiveUser, getRequesterProfile, isAdminRole } from '../../backen
 import { getSubmissionsCollection } from '../../backend/db/mongo.js';
 import {
   buildSubmission,
+  NO_GITHUB,
   parseSubmissionPayload,
   toPublicSubmissionResponse,
   toSubmissionResponse
 } from '../../backend/submissions/submission.js';
+import { GithubLookupError, verifyGithubUrl } from '../../backend/submissions/github.js';
 import { getUserVotes, getVoteTotals } from '../../backend/submissions/votes.js';
 import type { AppSubmission, VoteValue } from '../../backend/types/submission.js';
 import { jsonError, jsonOk } from '../../backend/utils/http.js';
@@ -37,9 +39,10 @@ async function handleCreate(req: VercelRequest, res: VercelResponse) {
     }
 
     const payload = parseSubmissionPayload(req.body ?? {});
+    const github = payload.githubUrl ? await verifyGithubUrl(payload.githubUrl) : NO_GITHUB;
 
     const submissions = await getSubmissionsCollection();
-    const created = buildSubmission(payload, token.uid, email);
+    const created = buildSubmission(payload, token.uid, email, github);
     const result = await submissions.insertOne(created);
     const persisted = await submissions.findOne({ _id: result.insertedId });
 
@@ -54,6 +57,9 @@ async function handleCreate(req: VercelRequest, res: VercelResponse) {
     }
     if (error instanceof ZodError) {
       return jsonError(res, 400, error.issues.map((issue) => issue.message).join('; '));
+    }
+    if (error instanceof GithubLookupError) {
+      return jsonError(res, 400, error.message);
     }
 
     const message = error instanceof Error ? error.message : 'Unexpected server error.';
