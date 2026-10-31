@@ -11,17 +11,16 @@
       <div>
         <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-900">Platform</h2>
         <ul class="mt-3 space-y-2 text-sm text-slate-600">
-          <li>Explore Apps</li>
-          <li>Submit App</li>
-          <li>Developer Profiles</li>
+          <li><router-link to="/explore" class="hover:text-brand-700">Explore Apps</router-link></li>
+          <li><router-link to="/submit" class="hover:text-brand-700">Submit App</router-link></li>
         </ul>
       </div>
       <div>
         <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-900">Company</h2>
         <ul class="mt-3 space-y-2 text-sm text-slate-600">
-          <li>Privacy</li>
-          <li>Terms</li>
-          <li>Contact</li>
+          <li><router-link to="/privacy" class="hover:text-brand-700">Privacy</router-link></li>
+          <li><router-link to="/terms" class="hover:text-brand-700">Terms</router-link></li>
+          <li><router-link to="/contact" class="hover:text-brand-700">Contact</router-link></li>
         </ul>
       </div>
     </div>

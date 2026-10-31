@@ -73,7 +73,7 @@ onMounted(() => {
 
     <section class="mx-auto max-w-7xl px-4 pt-12 sm:px-6 lg:px-8">
       <h1 class="font-display text-3xl font-semibold text-slate-900">Explore alternatives</h1>
-      <p class="mt-2 text-sm text-slate-600">Pick the app you want to leave, or search by name and topic. Results open in a new tab.</p>
+      <p class="mt-2 text-sm text-slate-600">Pick the app you want to leave, or search by name and topic. Select a result to see its details and licence.</p>
 
       <form class="mt-6" role="search" aria-label="Search alternatives" @submit.prevent>
         <label for="explore-search" class="sr-only">Search alternatives</label>

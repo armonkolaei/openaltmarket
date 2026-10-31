@@ -7,11 +7,20 @@ import type {
   VoteTotals,
   VoteValue
 } from '../types/submission.js';
-import { isFreeUseLicense, parseGithubUrl } from './github.js';
+import { parseGithubUrl, type GithubSnapshot } from './github.js';
+import { getLicenseInfo, type LicenseInfo } from './licenses.js';
 import { EMPTY_TOTALS } from './voteMath.js';
 
+// A repo whose license check failed (GitHub outage) must not look unlicensed or free to use.
+export function licenseInfoFor(doc: AppSubmission): LicenseInfo {
+  if (doc.githubUrl && !doc.licenseCheckedAt) {
+    return { ...getLicenseInfo('NOASSERTION'), name: 'License not yet verified' };
+  }
+  return getLicenseInfo(doc.license, doc.github?.licenseName);
+}
+
 function hasFreeUse(doc: AppSubmission): boolean {
-  return !!doc.githubUrl && isFreeUseLicense(doc.license);
+  return !!doc.githubUrl && !!doc.licenseCheckedAt && licenseInfoFor(doc).freeToUse;
 }
 
 const submissionPayloadSchema = z.object({
@@ -63,9 +72,10 @@ export interface GithubFields {
   githubUrl: string | null;
   license: string | null;
   licenseCheckedAt: Date | null;
+  github: GithubSnapshot | null;
 }
 
-export const NO_GITHUB: GithubFields = { githubUrl: null, license: null, licenseCheckedAt: null };
+export const NO_GITHUB: GithubFields = { githubUrl: null, license: null, licenseCheckedAt: null, github: null };
 
 export function parseSubmissionPayload(input: unknown): SubmissionPayload {
   return submissionPayloadSchema.parse(input);
@@ -104,6 +114,7 @@ export function toSubmissionResponse(doc: AppSubmission & { _id?: ObjectId }): A
     githubUrl: doc.githubUrl ?? null,
     license: doc.license ?? null,
     licenseCheckedAt: doc.licenseCheckedAt ? doc.licenseCheckedAt.toISOString() : null,
+    licenseInfo: licenseInfoFor(doc),
     isFreeToUse: hasFreeUse(doc),
     alternativesTo: doc.alternativesTo,
     keywords: doc.keywords,
@@ -128,7 +139,9 @@ export function toPublicSubmissionResponse(
     websiteUrl: doc.websiteUrl,
     githubUrl: doc.githubUrl ?? null,
     license: doc.license ?? null,
+    licenseInfo: licenseInfoFor(doc),
     isFreeToUse: hasFreeUse(doc),
+    github: doc.github ?? null,
     alternativesTo: doc.alternativesTo,
     keywords: doc.keywords,
     createdAt: doc.createdAt.toISOString(),

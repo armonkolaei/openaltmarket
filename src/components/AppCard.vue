@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import VoteButtons from '@/components/VoteButtons.vue';
+import { activityClasses, activityOf, formatNumber, licenseClasses } from '@/lib/repoInfo';
 import type { PublicSubmission } from '@/types/app';
 
 const props = defineProps<{ app: PublicSubmission }>();
 
-const host = computed(() => {
-  try {
-    return new URL(props.app.websiteUrl).hostname.replace(/^www\./, '');
-  } catch {
-    return props.app.websiteUrl;
-  }
-});
+const activity = computed(() => (props.app.github ? activityOf(props.app.github) : null));
+const licenseLabel = computed(() => props.app.licenseInfo.spdxId ?? props.app.licenseInfo.name);
+const showLicense = computed(() => Boolean(props.app.githubUrl));
 </script>
 
 <template>
@@ -30,7 +27,7 @@ const host = computed(() => {
       rel="noopener noreferrer"
       class="absolute right-3 top-3 z-10 rounded-full p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
       :aria-label="`${app.name} on GitHub`"
-      :title="app.license ? `View on GitHub (${app.license})` : 'View on GitHub'"
+      :title="`View on GitHub (${licenseLabel})`"
     >
       <svg viewBox="0 0 16 16" class="h-5 w-5" fill="currentColor" aria-hidden="true">
         <path
@@ -39,23 +36,34 @@ const host = computed(() => {
       </svg>
     </a>
 
-    <a :href="app.websiteUrl" target="_blank" rel="noopener noreferrer" class="flex min-w-0 flex-1 flex-col p-5">
-      <div class="flex items-start gap-2" :class="app.githubUrl ? 'pr-8' : ''">
-        <h3 class="font-display text-lg font-semibold text-slate-900 group-hover:text-brand-700">{{ app.name }}</h3>
-        <span class="shrink-0 text-xs text-slate-400" aria-hidden="true">↗</span>
+    <router-link :to="{ name: 'app-detail', params: { id: app.id } }" class="flex min-w-0 flex-1 flex-col p-5">
+      <div v-if="activity || showLicense" class="flex flex-wrap gap-1.5" :class="app.githubUrl ? 'pr-8' : ''">
+        <span
+          v-if="activity && app.github"
+          class="rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset"
+          :class="activityClasses[activity.level]"
+        >
+          {{ activity.label }}
+        </span>
+        <span
+          v-if="app.isFreeToUse"
+          class="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-300 to-yellow-400 px-2.5 py-0.5 text-xs font-semibold text-amber-950"
+          :title="`${app.licenseInfo.label}: free to use, modify and sell`"
+        >
+          ★ {{ licenseLabel }}
+        </span>
+        <span
+          v-else-if="showLicense"
+          class="rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset"
+          :class="licenseClasses[app.licenseInfo.category]"
+          :title="app.licenseInfo.label"
+        >
+          {{ licenseLabel }}
+        </span>
       </div>
-      <p class="mt-1 text-xs text-slate-500">{{ host }}</p>
-      <p
-        v-if="app.isFreeToUse"
-        class="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-gradient-to-r from-amber-300 to-yellow-400 px-2.5 py-0.5 text-xs font-semibold text-amber-950"
-        :title="`Open source (${app.license}) – free to use, modify and sell`"
-      >
-        ★ Open source · {{ app.license }}
-      </p>
-      <p v-else-if="app.githubUrl && app.license" class="mt-2 w-fit rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-        {{ app.license }}
-      </p>
-      <p class="mt-3 line-clamp-3 text-sm text-slate-600">{{ app.description }}</p>
+
+      <h3 class="mt-2 font-display text-lg font-semibold text-slate-900 group-hover:text-brand-700">{{ app.name }}</h3>
+      <p class="mt-2 line-clamp-3 text-sm text-slate-600">{{ app.description }}</p>
 
       <div class="mt-4">
         <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Alternative to</p>
@@ -73,11 +81,15 @@ const host = computed(() => {
         </div>
       </div>
 
-      <div class="mt-auto flex flex-wrap gap-1.5 pt-4">
-        <span v-for="tag in app.keywords.slice(0, 4)" :key="tag" class="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+      <div class="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-4 text-xs text-slate-500">
+        <template v-if="app.github">
+          <span title="GitHub stars">★ {{ formatNumber(app.github.stars) }}</span>
+          <span title="Forks">⑂ {{ formatNumber(app.github.forks) }} forks</span>
+        </template>
+        <span v-for="tag in app.keywords.slice(0, 3)" :key="tag" class="rounded-md bg-slate-100 px-2 py-0.5 text-slate-600">
           #{{ tag }}
         </span>
       </div>
-    </a>
+    </router-link>
   </article>
 </template>

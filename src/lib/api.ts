@@ -119,6 +119,23 @@ export async function fetchApprovedSubmissions(): Promise<PublicSubmission[]> {
   return data.submissions;
 }
 
+export async function fetchSubmission(id: string): Promise<PublicSubmission> {
+  const response = await fetch(`/api/submissions/${encodeURIComponent(id)}`, {
+    method: 'GET',
+    headers: { ...defaultHeaders, ...(await getAuthHeader()) }
+  });
+
+  if (response.status === 404) {
+    throw new Error('We could not find that alternative.');
+  }
+  if (!response.ok) {
+    throw await parseError(response, 'Unable to load this alternative.');
+  }
+
+  const data = (await response.json()) as { submission: PublicSubmission };
+  return data.submission;
+}
+
 export async function voteOnSubmission(id: string, value: VoteValue): Promise<VoteResult> {
   const response = await fetch(`/api/submissions/${id}`, {
     method: 'PUT',

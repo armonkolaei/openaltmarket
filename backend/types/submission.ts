@@ -1,3 +1,6 @@
+import type { GithubSnapshot } from '../submissions/github.js';
+import type { LicenseInfo } from '../submissions/licenses.js';
+
 export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
 
 export interface AppSubmission {
@@ -8,6 +11,7 @@ export interface AppSubmission {
   githubUrl?: string | null;
   license?: string | null;
   licenseCheckedAt?: Date | null;
+  github?: GithubSnapshot | null;
   alternativesTo: string[];
   keywords: string[];
   submittedByUid: string;
@@ -27,6 +31,7 @@ export interface AppSubmissionResponse {
   githubUrl: string | null;
   license: string | null;
   licenseCheckedAt: string | null;
+  licenseInfo: LicenseInfo;
   isFreeToUse: boolean;
   alternativesTo: string[];
   keywords: string[];
@@ -45,7 +50,9 @@ export interface PublicSubmissionResponse {
   websiteUrl: string;
   githubUrl: string | null;
   license: string | null;
+  licenseInfo: LicenseInfo;
   isFreeToUse: boolean;
+  github: GithubSnapshot | null;
   alternativesTo: string[];
   keywords: string[];
   createdAt: string;

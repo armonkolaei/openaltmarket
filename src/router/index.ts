@@ -6,10 +6,15 @@ import ResetPasswordView from '@/views/ResetPasswordView.vue';
 import DashboardView from '@/views/DashboardView.vue';
 import ExploreView from '@/views/ExploreView.vue';
 import NotFoundView from '@/views/NotFoundView.vue';
+import AppDetailView from '@/views/AppDetailView.vue';
+import TermsView from '@/views/TermsView.vue';
+import PrivacyView from '@/views/PrivacyView.vue';
+import ContactView from '@/views/ContactView.vue';
 import { useAuthStore } from '@/stores/auth';
 
 const router = createRouter({
   history: createWebHistory(),
+  scrollBehavior: (to, from, saved) => saved ?? (to.path === from.path ? undefined : { top: 0 }),
   routes: [
     {
       path: '/',
@@ -39,6 +44,14 @@ const router = createRouter({
       name: 'explore',
       component: ExploreView
     },
+    {
+      path: '/apps/:id',
+      name: 'app-detail',
+      component: AppDetailView
+    },
+    { path: '/terms', name: 'terms', component: TermsView },
+    { path: '/privacy', name: 'privacy', component: PrivacyView },
+    { path: '/contact', name: 'contact', component: ContactView },
     {
       path: '/submit',
       name: 'submit',

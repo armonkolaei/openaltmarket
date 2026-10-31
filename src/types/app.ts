@@ -29,6 +29,56 @@ export interface AppUserProfile {
 
 export type VoteValue = -1 | 0 | 1;
 
+export type LicenseCategory =
+  | 'permissive'
+  | 'public-domain'
+  | 'weak-copyleft'
+  | 'copyleft'
+  | 'network-copyleft'
+  | 'source-available'
+  | 'non-commercial'
+  | 'none'
+  | 'unknown';
+
+export interface LicenseInfo {
+  spdxId: string | null;
+  name: string;
+  category: LicenseCategory;
+  label: string;
+  freeToUse: boolean;
+  canUseCommercially: boolean;
+  canModify: boolean;
+  canSell: boolean;
+  mustShareSource: boolean;
+  summary: string;
+  obligations: string[];
+}
+
+export interface GithubSnapshot {
+  fullName: string;
+  owner: string;
+  repo: string;
+  description: string | null;
+  homepage: string | null;
+  avatarUrl: string | null;
+  stars: number;
+  forks: number;
+  openIssues: number;
+  watchers: number;
+  contributors: number | null;
+  createdAt: string;
+  pushedAt: string;
+  archived: boolean;
+  defaultBranch: string;
+  primaryLanguage: string | null;
+  languages: { name: string; bytes: number }[];
+  topics: string[];
+  licenseName: string | null;
+  licenseUrl: string | null;
+  latestRelease: { tag: string; publishedAt: string | null } | null;
+  fetchedAt: string;
+}
+
 export interface VoteResult {
   id: string;
   upvotes: number;
@@ -44,7 +94,9 @@ export interface PublicSubmission {
   websiteUrl: string;
   githubUrl: string | null;
   license: string | null;
+  licenseInfo: LicenseInfo;
   isFreeToUse: boolean;
+  github: GithubSnapshot | null;
   alternativesTo: string[];
   keywords: string[];
   createdAt: string;
@@ -63,6 +115,7 @@ export interface AppSubmission {
   githubUrl: string | null;
   license: string | null;
   licenseCheckedAt: string | null;
+  licenseInfo: LicenseInfo;
   isFreeToUse: boolean;
   alternativesTo: string[];
   keywords: string[];

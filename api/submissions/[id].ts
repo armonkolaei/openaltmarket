@@ -7,12 +7,14 @@ import { getSubmissionsCollection, getVotesCollection } from '../../backend/db/m
 import {
   NO_GITHUB,
   submissionEditSchema,
+  toPublicSubmissionResponse,
   toSubmissionResponse,
   type GithubFields
 } from '../../backend/submissions/submission.js';
 import { GithubLookupError, verifyGithubUrl } from '../../backend/submissions/github.js';
 import { EMPTY_TOTALS } from '../../backend/submissions/voteMath.js';
-import { getVoteTotals, setVote } from '../../backend/submissions/votes.js';
+import { getUserVotes, getVoteTotals, setVote } from '../../backend/submissions/votes.js';
+import type { VoteValue } from '../../backend/types/submission.js';
 import { jsonError, jsonOk } from '../../backend/utils/http.js';
 
 const reviewPayloadSchema = submissionEditSchema
@@ -31,6 +33,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return jsonError(res, 400, 'Invalid submission id.');
   }
 
+  if (req.method?.toUpperCase() === 'GET') {
+    return handleGetPublic(req, res, submissionId);
+  }
+
   if (req.method?.toUpperCase() === 'PATCH') {
     return handleReview(req, res, submissionId);
   }
@@ -43,7 +49,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return handleDelete(req, res, submissionId);
   }
 
-  return jsonError(res, 405, `Method ${req.method ?? 'UNKNOWN'} not allowed. Use PATCH, PUT or DELETE.`);
+  return jsonError(res, 405, `Method ${req.method ?? 'UNKNOWN'} not allowed. Use GET, PATCH, PUT or DELETE.`);
+}
+
+const SNAPSHOT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+async function handleGetPublic(req: VercelRequest, res: VercelResponse, submissionId: string) {
+  try {
+    const submissions = await getSubmissionsCollection();
+    let doc = await submissions.findOne({ _id: new ObjectId(submissionId), status: 'approved' });
+    if (!doc) {
+      return jsonError(res, 404, 'Alternative not found.');
+    }
+
+    // GitHub stats go stale, so refresh them lazily; a failed refresh just keeps the old snapshot.
+    const fetchedAt = doc.github?.fetchedAt ? Date.parse(doc.github.fetchedAt) : 0;
+    if (doc.githubUrl && Date.now() - fetchedAt > SNAPSHOT_MAX_AGE_MS) {
+      const refreshed = await verifyGithubUrl(doc.githubUrl).catch(() => null);
+      if (refreshed?.github) {
+        doc =
+          (await submissions.findOneAndUpdate(
+            { _id: doc._id },
+            { $set: { license: refreshed.license, licenseCheckedAt: refreshed.licenseCheckedAt, github: refreshed.github } },
+            { returnDocument: 'after' }
+          )) ?? doc;
+      }
+    }
+
+    const totals = (await getVoteTotals([submissionId])).get(submissionId);
+    let myVote: VoteValue = 0;
+    if (req.headers.authorization) {
+      const token = await verifyRequestToken(req).catch(() => null);
+      if (token) {
+        myVote = (await getUserVotes(token.uid, [submissionId])).get(submissionId) ?? 0;
+      }
+      res.setHeader('Cache-Control', 'private, no-store');
+    } else {
+      res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+    }
+
+    return jsonOk(res, { submission: toPublicSubmissionResponse(doc, totals, myVote) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unexpected server error.';
+    return jsonError(res, 500, message);
+  }
 }
 
 async function handleVote(req: VercelRequest, res: VercelResponse, submissionId: string) {

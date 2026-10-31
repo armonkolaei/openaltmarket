@@ -82,6 +82,11 @@ const submit = async () => {
           >
             {{ authStore.isLoading ? 'Creating account...' : 'Register' }}
           </button>
+          <p class="text-center text-xs text-slate-500">
+            By registering you agree to our
+            <RouterLink to="/terms" class="underline">Terms of Use</RouterLink> and
+            <RouterLink to="/privacy" class="underline">Privacy Policy</RouterLink>.
+          </p>
         </form>
 
         <p class="mt-6 text-sm text-slate-600">

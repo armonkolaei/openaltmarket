@@ -18,7 +18,7 @@ const replacedCount = computed(() => new Set(apps.value.flatMap((item) => item.a
 const steps = [
   { title: 'Search', text: 'Look up the app you want to replace and see community-approved alternatives.' },
   { title: 'Compare', text: 'Filter by the tool you are leaving or by topic, then read what each option offers.' },
-  { title: 'Go', text: 'Click a result to open the alternative in a new tab.' },
+  { title: 'Go', text: 'Click a result to see its repository stats and what its licence lets you do.' },
   { title: 'Contribute', text: 'Know a great alternative? Submit it and our admins will review it.' }
 ];
 
